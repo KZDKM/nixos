@@ -8,6 +8,7 @@
     enable = true;
     plugins = [
         inputs.Hyprspace.packages."${system}".default
+        inputs.Hedge.packages."${system}".default
     ];
     settings = {
       monitor = [
@@ -59,7 +60,7 @@
           enabled = true;
           size = 8;
           passes = 2;
-          popups = true;
+          popups = false;
         };
         shadow = {
           range = 4;
@@ -241,6 +242,9 @@
       bindm = [
         "$mainMod, mouse:272, movewindow"
         "bindm = $mainMod, mouse:273, resizewindow"
+      ];
+      hotedge = [
+        "DP-2,bottom,8,128,ags request 'show dock',ags request 'hide dock',1"
       ];
     };
   };

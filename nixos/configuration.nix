@@ -209,11 +209,13 @@
     pkgs.vscodium
     pkgs.obsidian
     pkgs.libreoffice
+    pkgs.apostrophe
 
     pkgs.steam
     pkgs.vesktop
     pkgs.obs-studio
     pkgs.netease-cloud-music-gtk
+    pkgs.prismlauncher
 
   # utilities
     pkgs.gnome-tweaks
@@ -223,6 +225,7 @@
     pkgs.adwsteamgtk
     pkgs.gdm-settings
     pkgs.fastfetch
+    pkgs.junction
   ];
 
   # Set default themes

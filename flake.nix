@@ -12,6 +12,7 @@
 
     ags.url = "github:KZDKM/ags";
     Hyprspace.url = "github:KZDKM/Hyprspace";
+    Hedge.url = "github:KZDKM/Hedge";
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
