@@ -9,9 +9,14 @@ let
   );
   uBlockUrl = builtins.head (builtins.filter (a: builtins.match ".*firefox.*" a.name != null) uBlockRelease.assets);
 in {
+  programs.firefox = {
+    enable = true;
+  };
   environment.systemPackages = [
-    (inputs.zen-browser.packages."${system}".beta-unwrapped.override {
+    (pkgs.wrapFirefox (inputs.zen-browser.packages."${system}".beta-unwrapped.override {
       policies = {
+        DisableTelemetry = true;
+        DontCheckDefaultBrowser = true;
         ExtensionSettings = {
           "uBlock0@raymondhill.net" = {
             install_url = uBlockUrl.browser_download_url;
@@ -19,17 +24,17 @@ in {
           };
         };
       };
-    })
-  ];
+    }) {})
+    ];
   # Set default browser
-    xdg.mime = {
-      enable = true;
-      defaultApplications = {
-        "text/html" = "zen-beta.desktop";
-        "x-scheme-handler/http" = "zen-beta.desktop";
-        "x-scheme-handler/https" = "zen-beta.desktop";
-        "x-scheme-handler/about" = "zen-beta.desktop";
-        "x-scheme-handler/unknown" = "zen-beta.desktop";
-      };
+  xdg.mime = {
+    enable = true;
+    defaultApplications = {
+      "text/html" = "zen-beta.desktop";
+      "x-scheme-handler/http" = "zen-beta.desktop";
+      "x-scheme-handler/https" = "zen-beta.desktop";
+      "x-scheme-handler/about" = "zen-beta.desktop";
+      "x-scheme-handler/unknown" = "zen-beta.desktop";
     };
+  };
 }

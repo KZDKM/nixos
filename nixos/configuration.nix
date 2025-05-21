@@ -12,6 +12,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxPackages_zen;
+  boot.kernelParams = [ "amd_iommu=on" ];
 
   networking.hostName = "nixos";
 
@@ -96,9 +97,6 @@
     extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [];
   };
-
-  # Install firefox.
-  programs.firefox.enable = true;
 
   # Install Hyprland.
   programs.hyprland = {
