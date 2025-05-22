@@ -29,6 +29,8 @@
           PerScreenDPI=True
           EnableFractionalScale=True
         '';
+        ".config/gtk-3.0/gtk.css".source =  ./themes/gtk-3.0/gtk.css;
+        ".config/gtk-4.0/gtk.css".source =  ./themes/gtk-4.0/gtk.css;
     };
   };
 }

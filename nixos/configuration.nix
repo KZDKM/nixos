@@ -202,6 +202,7 @@
     pkgs.easyeffects
     pkgs.mission-center
     pkgs.warp
+    pkgs.gnome-solanum
 
     pkgs.zed-editor
     pkgs.vscodium
@@ -232,7 +233,8 @@
   # Set default themes
   environment.etc = {
     #"xdg/gtk-2.0".source =  ./themes/gtk-2.0;
-    "xdg/gtk-3.0".source =  ./themes/gtk-3.0;
+    #"xdg/gtk-3.0".source =  ./themes/gtk-3.0;
+    #"xdg/gtk-4.0".source =  ./themes/gtk-4.0;
     "xdg/Kvantum/kvantum.kvconfig".text = ''
       theme=KvLibadwaita
     '';
