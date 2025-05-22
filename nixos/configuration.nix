@@ -209,7 +209,6 @@
     pkgs.libreoffice
     pkgs.apostrophe
 
-    pkgs.steam
     pkgs.vesktop
     pkgs.obs-studio
     pkgs.netease-cloud-music-gtk
@@ -225,6 +224,10 @@
     pkgs.fastfetch
     pkgs.junction
   ];
+
+  programs.steam = {
+    enable = true;
+  };
 
   # Set default themes
   environment.etc = {
