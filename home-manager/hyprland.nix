@@ -192,6 +192,7 @@
         "$mainMod, Return, fullscreen, 1"
         "$mainMod SHIFT, Return, fullscreen"
         "$mainMod, TAB, exec, hyprctl dispatch overview:toggle"
+        "$mainMod, F12, exec, grimblast save area"
 
         # Fn controls
          ", XF86AudioRaiseVolume, exec, swayosd-client --output-volume raise"

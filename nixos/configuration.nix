@@ -9,10 +9,45 @@
     ];
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages_zen;
-  boot.kernelParams = [ "amd_iommu=on" ];
+  boot = {
+    loader = {
+      /*systemd-boot = {
+        enable = true;
+        };*/
+      grub = {
+        enable = true;
+        efiSupport = true;
+        device = "nodev";
+        splashImage = null;
+      };
+      efi = {
+        canTouchEfiVariables = true;
+        efiSysMountPoint = "/boot/efi";
+      };
+      timeout = 0;
+    };
+    kernelPackages = pkgs.linuxPackages_zen;
+    consoleLogLevel = 3;
+    initrd = {
+      verbose = false;
+    };
+    kernelParams = [
+      "quiet"
+      "splash"
+      "boot.shell_on_fail"
+      "udev.log_priority=3"
+      "rd.systemd.show_status=auto"
+      "amd_iommu=on"
+    ];
+
+    # splash
+    plymouth = {
+      enable = true;
+      theme = "spinner";
+      logo = "${pkgs.nixos-icons}/share/icons/hicolor/48x48/apps/nix-snowflake-white.png";
+    };
+  };
+  hardware.amdgpu.initrd.enable = true;
 
   networking.hostName = "nixos";
 
@@ -94,7 +129,7 @@
   users.users.kzdkm = {
     isNormalUser = true;
     description = "kzdkm";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" ];
     packages = with pkgs; [];
   };
 
@@ -195,6 +230,7 @@
     pkgs.hypridle
     pkgs.hyprsunset
     pkgs.sway-audio-idle-inhibit
+    pkgs.grimblast
 
   # must-have software
     pkgs.blackbox-terminal
@@ -230,6 +266,12 @@
     enable = true;
   };
 
+  programs.virt-manager.enable = true;
+  virtualisation = {
+    libvirtd.enable = true;
+    spiceUSBRedirection.enable = true;
+  };
+
   # Set default themes
   environment.etc = {
     #"xdg/gtk-2.0".source =  ./themes/gtk-2.0;
@@ -246,6 +288,10 @@
           settings = {
             "org/gnome/desktop/interface" = {
               gtk-theme = "adw-gtk3";
+            };
+            "org/virt-manager/virt-manager/connections" = {
+              autoconnect = ["qemu:///system"];
+              uris = ["qemu:///system"];
             };
           };
         }

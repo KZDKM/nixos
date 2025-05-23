@@ -4,7 +4,7 @@ let
   uBlockRelease = pkgs.lib.importJSON (
     builtins.fetchurl {
       url = "https://api.github.com/repos/gorhill/uBlock/releases/latest";
-      sha256 = "sha256:06k4kxh9p8vgd747vc7q9bz49kj0fm1jpm3v34mdzsws3rjryz81";
+      sha256 = "sha256:1zsgiyqc7p81v08ipgvlqjzygy7pshnmw9dllfidn2dc64l0zz0h";
     }
   );
   uBlockUrl = builtins.head (builtins.filter (a: builtins.match ".*firefox.*" a.name != null) uBlockRelease.assets);
