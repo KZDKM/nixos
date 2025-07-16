@@ -1,19 +1,27 @@
-{ inputs, config, pkgs, system, ... }:
-
 {
-  imports =
-    [
-      ./hardware-configuration.nix
-      ./browser.nix
-      ./spicetify.nix
-    ];
+  inputs,
+  config,
+  pkgs,
+  system,
+  ...
+}:
+{
+  imports = [
+    ./hardware-configuration.nix
+    ./browser.nix
+    ./spicetify.nix
+    ./uuplugin.nix
+  ];
 
   # Bootloader.
   boot = {
+    supportedFilesystems = [ "ntfs" ];
     loader = {
-      /*systemd-boot = {
+      /*
+        systemd-boot = {
         enable = true;
-        };*/
+        };
+      */
       grub = {
         enable = true;
         efiSupport = true;
@@ -57,6 +65,9 @@
 
   # Enable networking
   networking.networkmanager.enable = true;
+  networking.firewall = {
+    enable = false;
+  };
 
   # Set your time zone.
   time.timeZone = "Asia/Shanghai";
@@ -80,8 +91,8 @@
   services.xserver.enable = true;
 
   # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
+  services.displayManager.gdm.enable = true;
+  services.desktopManager.gnome.enable = true;
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -104,7 +115,12 @@
     extraConfig.pipewire = {
       "10-clock-rate" = {
         "context.properties" = {
-          "default.clock.allowed-rates" = [ 44100 48000 88200 96000 ];
+          "default.clock.allowed-rates" = [
+            44100
+            48000
+            88200
+            96000
+          ];
         };
       };
     };
@@ -123,14 +139,22 @@
   hardware.bluetooth.enable = true;
   # Just in case...
   hardware.graphics.enable = true;
+  hardware.logitech.wireless = {
+    enable = true;
+    enableGraphical = true;
+  };
 
   users.defaultUserShell = pkgs.zsh;
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.kzdkm = {
     isNormalUser = true;
     description = "kzdkm";
-    extraGroups = [ "networkmanager" "wheel" "libvirtd" ];
-    packages = with pkgs; [];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "libvirtd"
+      "docker"
+    ];
   };
 
   # Install Hyprland.
@@ -164,7 +188,10 @@
   nixpkgs.config.allowUnfree = true;
 
   # Enable flakes
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   # List packages installed in system profile. To search, run:
   fonts.fontconfig.enable = true;
@@ -177,13 +204,16 @@
     pkgs.font-awesome
   ];
   environment.systemPackages = [
-  # essentials
-    ((pkgs.vim_configurable.override {  }).customize{
+    # essentials
+    ((pkgs.vim_configurable.override { }).customize {
       name = "vim";
       # Install plugins for example for syntax highlighting of nix files
       vimrcConfig.packages.myplugins = with pkgs.vimPlugins; {
-        start = [ vim-nix vim-lastplace ];
-        opt = [];
+        start = [
+          vim-nix
+          vim-lastplace
+        ];
+        opt = [ ];
       };
       vimrcConfig.customRC = ''
         set shiftwidth=2
@@ -192,10 +222,8 @@
         set autoindent
         set smartindent
         syntax on
-        " ...
       '';
-      }
-    )
+    })
     pkgs.wget
     pkgs.curl
     pkgs.git
@@ -205,15 +233,15 @@
     pkgs.home-manager
     pkgs.gh
 
-  # themes
+    # themes
     pkgs.adw-gtk3
     (pkgs.callPackage pkgs.stdenv.mkDerivation {
       name = "kvlibadwaita-theme";
       src = pkgs.fetchFromGitHub {
-          owner = "GabePoel";
-          repo = "KvLibadwaita";
-          rev = "main";
-          sha256 = "sha256-xBl6zmpqTAH5MIT5iNAdW6kdOcB5MY0Dtrb95hdYpwA=";
+        owner = "GabePoel";
+        repo = "KvLibadwaita";
+        rev = "main";
+        sha256 = "sha256-xBl6zmpqTAH5MIT5iNAdW6kdOcB5MY0Dtrb95hdYpwA=";
       };
       installPhase = ''
         mkdir -p $out/share/Kvantum/
@@ -221,7 +249,7 @@
       '';
     })
 
-  # system services
+    # system services
     pkgs.v2raya
     pkgs.ags
     pkgs.networkmanagerapplet
@@ -232,7 +260,7 @@
     pkgs.sway-audio-idle-inhibit
     pkgs.grimblast
 
-  # must-have software
+    # must-have software
     pkgs.blackbox-terminal
     pkgs.pwvucontrol
     pkgs.easyeffects
@@ -250,8 +278,14 @@
     pkgs.obs-studio
     pkgs.netease-cloud-music-gtk
     pkgs.prismlauncher
+    pkgs.lutris
+    pkgs.wechat-uos
+    pkgs.miru
+    pkgs.tor-browser
+    pkgs.teamspeak3
+    pkgs.telegram-desktop
 
-  # utilities
+    # utilities
     pkgs.gnome-tweaks
     pkgs.nil
     pkgs.nixd
@@ -260,6 +294,11 @@
     pkgs.gdm-settings
     pkgs.fastfetch
     pkgs.junction
+    pkgs.protonplus
+    pkgs.morewaita-icon-theme
+    pkgs.solaar
+    pkgs.clang-tools
+    pkgs.sbctl
   ];
 
   programs.steam = {
@@ -270,6 +309,8 @@
   virtualisation = {
     libvirtd.enable = true;
     spiceUSBRedirection.enable = true;
+    waydroid.enable = true;
+    docker.enable = true;
   };
 
   # Set default themes
@@ -284,17 +325,18 @@
   programs.dconf = {
     enable = true;
     profiles.user.databases = [
-        {
-          settings = {
-            "org/gnome/desktop/interface" = {
-              gtk-theme = "adw-gtk3";
-            };
-            "org/virt-manager/virt-manager/connections" = {
-              autoconnect = ["qemu:///system"];
-              uris = ["qemu:///system"];
-            };
+      {
+        settings = {
+          "org/gnome/desktop/interface" = {
+            gtk-theme = "adw-gtk3";
+            icon-theme = "MoreWaita";
           };
-        }
+          "org/virt-manager/virt-manager/connections" = {
+            autoconnect = [ "qemu:///system" ];
+            uris = [ "qemu:///system" ];
+          };
+        };
+      }
     ];
   };
 
@@ -304,22 +346,22 @@
     enable = true;
     fcitx5.waylandFrontend = true;
     fcitx5.addons = [
-       pkgs.fcitx5-gtk             # alternatively, kdePackages.fcitx5-qt
-       pkgs.fcitx5-chinese-addons  # table input method support
-       (pkgs.callPackage pkgs.stdenv.mkDerivation {
-             name = "fcitx5-theme";
-             src = pkgs.fetchFromGitHub {
-                 owner = "witt-bit";
-                 repo = "fcitx5-theme-macos12";
-                 rev = "main";
-                 sha256 = "sha256-H0X3+/mJ8KH73cZhv3ilNz77CBviQma4D2cKQ/iNiVM=";
-             };
-             installPhase = ''
-               mkdir -p $out/share/fcitx5/themes
-               cp -r ./* $out/share/fcitx5/themes
-             '';
-           })
-     ];
+      pkgs.fcitx5-gtk # alternatively, kdePackages.fcitx5-qt
+      pkgs.fcitx5-chinese-addons # table input method support
+      (pkgs.callPackage pkgs.stdenv.mkDerivation {
+        name = "fcitx5-theme";
+        src = pkgs.fetchFromGitHub {
+          owner = "witt-bit";
+          repo = "fcitx5-theme-macos12";
+          rev = "main";
+          sha256 = "sha256-H0X3+/mJ8KH73cZhv3ilNz77CBviQma4D2cKQ/iNiVM=";
+        };
+        installPhase = ''
+          mkdir -p $out/share/fcitx5/themes
+          cp -r ./* $out/share/fcitx5/themes
+        '';
+      })
+    ];
   };
 
   qt = {

@@ -1,0 +1,11 @@
+[Unit]
+Description=UU Steam Deck Plugin for General Linux
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+WorkingDirectory=/run/current-system/etc/uuplugin
+ExecStart=/run/current-system/sw/bin/uuplugin "/run/current-system/etc/uu.conf"
+
+[Install]
+WantedBy=default.target

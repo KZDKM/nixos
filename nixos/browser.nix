@@ -1,14 +1,22 @@
-{ inputs, pkgs, system, ... }:
+{
+  inputs,
+  pkgs,
+  system,
+  ...
+}:
 let
   # Fuck mozilla
   uBlockRelease = pkgs.lib.importJSON (
     builtins.fetchurl {
       url = "https://api.github.com/repos/gorhill/uBlock/releases/latest";
-      sha256 = "sha256:1zsgiyqc7p81v08ipgvlqjzygy7pshnmw9dllfidn2dc64l0zz0h";
+      sha256 = "sha256:0wp07xhpxn0jrn4mv22jgnpnwpkbqdyzhpgfsgk163k2m2x96085";
     }
   );
-  uBlockUrl = builtins.head (builtins.filter (a: builtins.match ".*firefox.*" a.name != null) uBlockRelease.assets);
-in {
+  uBlockUrl = builtins.head (
+    builtins.filter (a: builtins.match ".*firefox.*" a.name != null) uBlockRelease.assets
+  );
+in
+{
   programs.firefox = {
     enable = true;
   };
@@ -24,8 +32,8 @@ in {
           };
         };
       };
-    }) {})
-    ];
+    }) { })
+  ];
   # Set default browser
   xdg.mime = {
     enable = true;

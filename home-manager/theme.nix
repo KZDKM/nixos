@@ -1,9 +1,9 @@
 {pkgs, ...} : {
   gtk = {
     enable = true;
-    iconTheme = {
-      name = "Skeuowaita";
-    };
+    #iconTheme = {
+    #  name = "MoreWaita";
+    #};
     cursorTheme = {
       name = "Bibata-Original-Classic";
     };
@@ -11,15 +11,17 @@
   home = {
     packages = [
       pkgs.bibata-cursors
+      # moved to configuration.nix
+      #pkgs.morewaita-icon-theme
     ];
     file = {
         # Clone icon theme
-        ".local/share/icons/Skeuowaita".source = pkgs.fetchFromGitHub {
-            owner = "EuriNaiz";
-            repo = "Skeuowaita";
-            rev = "main";
-            sha256 = "sha256-hbqrNcb2IOY1zxgBRjTM3gNPtWw3BXZ6VnAvw5VhMY8=";
-        };
+        #".local/share/icons/MoreWaita".source = pkgs.fetchFromGitHub {
+        #    owner = "somepaulo";
+        #    repo = "MoreWaita";
+        #    rev = "main";
+        #    sha256 = "sha256-eCMU5RNlqHN6tImGd2ur+rSC+kR5xQ8Zh4BaRgjBHVc=";
+        #};
         # Set fcitx5 theme
         ".config/fcitx5/conf/classicui.conf".text = ''
           Vertical Candidate List=False

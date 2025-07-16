@@ -1,14 +1,20 @@
-{inputs, system, pkgs, ...} : {
+{
+  inputs,
+  system,
+  pkgs,
+  ...
+}:
+{
   home = {
     packages = [
-        pkgs.hyprcursor
+      pkgs.hyprcursor
     ];
   };
   wayland.windowManager.hyprland = {
     enable = true;
     plugins = [
-        inputs.Hyprspace.packages."${system}".default
-        inputs.Hedge.packages."${system}".default
+      inputs.Hyprspace.packages."${system}".default
+      inputs.Hedge.packages."${system}".default
     ];
     settings = {
       monitor = [
@@ -105,6 +111,9 @@
         disable_hyprland_logo = true;
         new_window_takes_over_fullscreen = 2;
       };
+      render = {
+        direct_scanout = true;
+      };
       xwayland = {
         force_zero_scaling = true;
       };
@@ -118,18 +127,18 @@
         overview = {
           overrideGaps = false;
           gapsIn = 10;
-      		gapsOut = 30;
-      		panelHeight = 300;
-      		reservedArea = 32;
-      		workspaceActiveBorder = "rgba(99999999)";
-      		workspaceInactiveBorder = "rgba(55555599)";
-      		drawActiveWorkspace = true;
-      		showOvelayLayers = true;
-      		hideRealLayers = false;
-      		affectStrut = false;
-      		panelBorderWidth = 0;
-      		panelBorderColor = "rgba(707070cc)";
-      		panelColor = "rgba(10101044)";
+          gapsOut = 30;
+          panelHeight = 300;
+          reservedArea = 32;
+          workspaceActiveBorder = "rgba(99999999)";
+          workspaceInactiveBorder = "rgba(55555599)";
+          drawActiveWorkspace = true;
+          showOvelayLayers = true;
+          hideRealLayers = false;
+          affectStrut = false;
+          panelBorderWidth = 0;
+          panelBorderColor = "rgba(707070cc)";
+          panelColor = "rgba(10101044)";
         };
       };
       windowrule = [
@@ -147,6 +156,10 @@
         "move 100%-340 100%-200, title:^(Picture-in-Picture)$"
         "size 320 180, title:^(Picture-in-Picture)$"
         "keepaspectratio, title:^(Picture-in-Picture)$"
+
+        "immediate, content:game"
+        "suppressevent activate, class: steam"
+        "suppressevent activatefocus, class: steam"
       ];
       # TODO: let ags set the rules
       layerrule = [
@@ -195,7 +208,7 @@
         "$mainMod, F12, exec, grimblast save area"
 
         # Fn controls
-         ", XF86AudioRaiseVolume, exec, swayosd-client --output-volume raise"
+        ", XF86AudioRaiseVolume, exec, swayosd-client --output-volume raise"
         ", XF86AudioLowerVolume, exec, swayosd-client --output-volume lower"
         ", XF86AudioMute, exec, swayosd-client --output-volume mute-toggle"
         ", XF86MonBrightnessUp, exec, swayosd-client --brightness raise"
