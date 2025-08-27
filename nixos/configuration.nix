@@ -137,6 +137,7 @@
   services.libinput.enable = true;
   # Enable bluetooth
   hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
   # Just in case...
   hardware.graphics.enable = true;
   hardware.logitech.wireless = {
@@ -157,7 +158,6 @@
     ];
   };
 
-  # Install Hyprland.
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
@@ -167,7 +167,6 @@
     NIXOS_OZONE_WL = "1";
   };
 
-  # Setup zeh
   programs.zsh = {
     enable = true;
     ohMyZsh = {
@@ -253,7 +252,6 @@
     pkgs.v2raya
     pkgs.ags
     pkgs.networkmanagerapplet
-    pkgs.blueman
     inputs.ags.packages."${system}".default
     pkgs.hypridle
     pkgs.hyprsunset
@@ -303,7 +301,30 @@
 
   programs.steam = {
     enable = true;
+    remotePlay.openFirewall = true;
+    localNetworkGameTransfers.openFirewall = true;
+    gamescopeSession.enable = true;
+    extraCompatPackages = with pkgs; [
+      proton-ge-bin
+      steamtinkerlaunch
+    ];
   };
+  programs.gamescope = {
+    enable = true;
+    capSysNice = true;
+  };
+
+  services.scx = {
+    enable = true;
+    scheduler = "scx_lavd";
+    extraArgs = [ "--performance" ];
+    package = pkgs.scx.rustscheds;
+  };
+
+  #PS4 controller
+  services.udev.extraRules = ''
+    KERNEL=="hidraw*", ATTRS{idVendor}=="11c0", ATTRS{idProduct}=="4001", MODE="0660", TAG+="uaccess"
+  '';
 
   programs.virt-manager.enable = true;
   virtualisation = {

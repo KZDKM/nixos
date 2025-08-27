@@ -12,6 +12,8 @@
   };
   wayland.windowManager.hyprland = {
     enable = true;
+    package = null;
+    portalPackage = null;
     plugins = [
       inputs.Hyprspace.packages."${system}".default
       inputs.Hedge.packages."${system}".default
@@ -141,6 +143,14 @@
           panelColor = "rgba(10101044)";
         };
       };
+      ecosystem = {
+        no_update_news = true;
+        no_donation_nag = true;
+      };
+      experimental = {
+        xx_color_management_v4 = true;
+      };
+
       windowrule = [
         "float, class:re.sonny.Junction"
         "float, class:org.gnome.NautilusPreviewer"
@@ -258,7 +268,7 @@
         "bindm = $mainMod, mouse:273, resizewindow"
       ];
       hotedge = [
-        "DP-2,bottom,8,128,ags request 'show dock',ags request 'hide dock',1"
+        "DP-1,bottom,8,128,ags request 'show dock',ags request 'hide dock',1"
       ];
     };
   };

@@ -8,9 +8,12 @@
 
     zen-browser.url = "github:0xc000022070/zen-browser-flake";
     zen-browser.inputs.nixpkgs.follows = "nixpkgs";
+
     spicetify-nix.url = "github:Gerg-L/spicetify-nix";
+    spicetify-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     ags.url = "github:KZDKM/ags";
+    ags.inputs.nixpkgs.follows = "nixpkgs";
     Hyprspace.url = "github:KZDKM/Hyprspace";
     Hedge.url = "github:KZDKM/Hedge";
     lanzaboote = {

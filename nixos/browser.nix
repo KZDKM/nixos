@@ -9,7 +9,7 @@ let
   uBlockRelease = pkgs.lib.importJSON (
     builtins.fetchurl {
       url = "https://api.github.com/repos/gorhill/uBlock/releases/latest";
-      sha256 = "sha256:0wp07xhpxn0jrn4mv22jgnpnwpkbqdyzhpgfsgk163k2m2x96085";
+      sha256 = "sha256:1q087ajzx3h0r9razh6pzkc9y3d0wxpxn0ggnvqax0wxcrcapp8i";
     }
   );
   uBlockUrl = builtins.head (
