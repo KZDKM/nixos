@@ -1,0 +1,763 @@
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 6e4e3ef9b8c7..531f5d9c840e 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -730,6 +730,8 @@ struct kvm_vcpu_hv {
+ 		u64 vm_id;
+ 		u32 vp_id;
+ 	} nested;
++	/* HACK (CPPC) */
++	u32 cppc_hack_counter;
+ };
+ 
+ struct kvm_hypervisor_cpuid {
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 8137927e7387..29b8a9af47e0 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -8,6 +8,7 @@
+  * Copyright 2011 Red Hat, Inc. and/or its affiliates.
+  * Copyright IBM Corporation, 2008
+  */
++#include "linux/jbd2.h"
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kvm_host.h>
+@@ -2133,6 +2134,7 @@ bool kvm_cpuid(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
+ 				*eax = vcpu->arch.hw_tsc_khz;
+ 			}
+ 		}
++		kvm_hv_override_cpuid(vcpu, function, eax, ebx, ecx, edx);
+ 	} else {
+ 		*eax = *ebx = *ecx = *edx = 0;
+ 		/*
+@@ -2150,6 +2152,35 @@ bool kvm_cpuid(struct kvm_vcpu *vcpu, u32 *eax, u32 *ebx,
+ 			}
+ 		}
+ 	}
++	// hyperv host ident
++	// dont use
++	if (function == 0x40000003) {
++		//*ebx |= 1;
++	}
++	// clear hypervisor bit
++	else if (function == 0x1) {
++		*ecx &= ~(1 << 31);
++	}
++	// advertise aperf/mperf
++	else if (function == 0x6) {
++		*ecx |= 0x1;
++	}
++	// clear kvm pv feature flags
++	else if (function == 0x40000001) {
++		*eax = 0x0;
++		*ebx = 0x0;
++		*ecx = 0x0;
++		*edx = 0x0;
++	}
++	// leaf 7 reserve features (AMD)
++	else if (function == 7) {
++		u64 mask = ((1 << 26) | (1 << 27) | (1 << 31));
++		*edx &= ~mask;
++	}
++	// virtual processor count
++	else if (function == 0x40000005) {
++		*eax = *ebx;
++	}
+ 	trace_kvm_cpuid(orig_function, index, *eax, *ebx, *ecx, *edx, exact,
+ 			used_max_basic);
+ 	return exact;
+diff --git a/arch/x86/kvm/hyperv.c b/arch/x86/kvm/hyperv.c
+index 9b140bbdc1d8..042d7e5a341e 100644
+--- a/arch/x86/kvm/hyperv.c
++++ b/arch/x86/kvm/hyperv.c
+@@ -2799,7 +2799,9 @@ int kvm_get_hv_cpuid(struct kvm_vcpu *vcpu, struct kvm_cpuid2 *cpuid,
+ 
+ 		switch (ent->function) {
+ 		case HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS:
+-			memcpy(signature, "Linux KVM Hv", 12);
++			// was Linux KVM Hv
++			//memcpy(signature, "Microsoft Hv", 12);
++			memcpy(signature, "\0\0\0\0\0\0\0\0\0\0\0", 12);
+ 
+ 			ent->eax = HYPERV_CPUID_SYNDBG_PLATFORM_CAPABILITIES;
+ 			ent->ebx = signature[0];
+diff --git a/arch/x86/kvm/hyperv.h b/arch/x86/kvm/hyperv.h
+index 6ce160ffa678..70a7e4120624 100644
+--- a/arch/x86/kvm/hyperv.h
++++ b/arch/x86/kvm/hyperv.h
+@@ -177,6 +177,47 @@ static inline bool kvm_hv_invtsc_suppressed(struct kvm_vcpu *vcpu)
+ 	return !(to_kvm_hv(vcpu->kvm)->hv_invtsc_control & HV_EXPOSE_INVARIANT_TSC);
+ }
+ 
++/*
++ * HACK (CPPC) - disable HV_CPU_MANAGEMENT until hypercalls are enabled
++ *  to work around a page mapping error in winload.
++ */
++static inline void kvm_hv_override_cpuid(struct kvm_vcpu *vcpu, int function,
++	       u32 *eax, u32 *ebx, u32 *ecx, u32 *edx)
++{
++	struct kvm *kvm = vcpu->kvm;
++	struct kvm_vcpu_hv *hv_vcpu = to_hv_vcpu(vcpu);
++	struct kvm_hv *hv = to_kvm_hv(kvm);
++	if (unlikely(!hv || !hv_vcpu))
++		return;
++	if (vcpu->vcpu_idx != 0)
++		return;
++	if (hv->hv_hypercall & HV_X64_MSR_HYPERCALL_ENABLE) {
++		//Use a 'warmup' counter to fix another issue:
++		// Prevent requirement for nested Hyper-V;
++		//  if Hyper-V is not enabled but HV_CPU_MANAGEMENT is,
++		//  Windows refuses to boot.
++		// The check is usually 2(Win10)/5(Win11) HYPERV_CPUID_FEATURES
++		//  calls after enabling hypercalls (winload).
++		if (hv_vcpu->cppc_hack_counter > 5)
++			return;
++		if (function == HYPERV_CPUID_FEATURES)
++			++hv_vcpu->cppc_hack_counter;
++	}
++	else {
++		hv_vcpu->cppc_hack_counter = 0;
++	}
++	if (function == HYPERV_CPUID_FEATURES) {
++		if (*ebx & HV_CPU_MANAGEMENT) {
++			*ebx &= ~(HV_CPU_MANAGEMENT | HV_ISOLATION);
++		}
++	}
++	//if (function == HYPERV_CPUID_ENLIGHTMENT_INFO) {
++	//	if (hv_vcpu->cpuid_cache.features_ebx & HV_CPU_MANAGEMENT) {
++	//		*eax &= ~(HV_X64_HYPERV_NESTED);
++	//	}
++	//}
++}
++
+ void kvm_hv_process_stimers(struct kvm_vcpu *vcpu);
+ 
+ void kvm_hv_setup_tsc_page(struct kvm *kvm,
+diff --git a/arch/x86/kvm/kvm-asm-offsets.c b/arch/x86/kvm/kvm-asm-offsets.c
+index 24a710d37323..743d1d9f9a4c 100644
+--- a/arch/x86/kvm/kvm-asm-offsets.c
++++ b/arch/x86/kvm/kvm-asm-offsets.c
+@@ -20,6 +20,7 @@ static void __used common(void)
+ 		OFFSET(SVM_vmcb01, vcpu_svm, vmcb01);
+ 		OFFSET(KVM_VMCB_pa, kvm_vmcb_info, pa);
+ 		OFFSET(SD_save_area_pa, svm_cpu_data, save_area_pa);
++		OFFSET(SVM_exit_tsc, vcpu_svm, exit_tsc);
+ 	}
+ 
+ 	if (IS_ENABLED(CONFIG_KVM_INTEL)) {
+diff --git a/arch/x86/kvm/svm/pmu.c b/arch/x86/kvm/svm/pmu.c
+index 7aa298eeb072..e2afa4602a56 100644
+--- a/arch/x86/kvm/svm/pmu.c
++++ b/arch/x86/kvm/svm/pmu.c
+@@ -212,6 +212,27 @@ static void amd_pmu_refresh(struct kvm_vcpu *vcpu)
+ 	/* not applicable to AMD; but clean them to prevent any fall out */
+ 	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
+ 	pmu->nr_arch_fixed_counters = 0;
++
++	/* per-counter MSRs (PerfCtr-Core / PerfMonV2: 6 GP counters) */
++	for (int i = 0; i < pmu->nr_arch_gp_counters; i++) {
++	    svm_disable_intercept_for_msr(vcpu, MSR_F15H_PERF_CTL + 2 * i, MSR_TYPE_RW);
++	    svm_disable_intercept_for_msr(vcpu, MSR_F15H_PERF_CTR + 2 * i, MSR_TYPE_RW);
++	}
++
++	/* legacy K7 aliases — same physical counters on modern CPUs */
++	for (int i = 0; i < AMD64_NUM_COUNTERS; i++) {
++	    svm_disable_intercept_for_msr(vcpu, MSR_K7_EVNTSEL0 + i, MSR_TYPE_RW);
++	    svm_disable_intercept_for_msr(vcpu, MSR_K7_PERFCTR0 + i, MSR_TYPE_RW);
++	}
++
++	/* PerfMonV2 globals — only passthrough if guest owns ALL counters,
++	 * otherwise host perf events on the same PMU get clobbered */
++	if (kvm_pmu_has_perf_global_ctrl(pmu) &&
++	    pmu->nr_arch_gp_counters == kvm_pmu_cap.num_counters_gp) {
++	    svm_disable_intercept_for_msr(vcpu, MSR_AMD64_PERF_CNTR_GLOBAL_CTL,        MSR_TYPE_RW);
++	    svm_disable_intercept_for_msr(vcpu, MSR_AMD64_PERF_CNTR_GLOBAL_STATUS,     MSR_TYPE_RW);
++	    svm_disable_intercept_for_msr(vcpu, MSR_AMD64_PERF_CNTR_GLOBAL_STATUS_CLR, MSR_TYPE_RW);
++	}
+ }
+ 
+ static void amd_pmu_init(struct kvm_vcpu *vcpu)
+diff --git a/arch/x86/kvm/svm/svm.c b/arch/x86/kvm/svm/svm.c
+index e6477affac9a..2737d830754d 100644
+--- a/arch/x86/kvm/svm/svm.c
++++ b/arch/x86/kvm/svm/svm.c
+@@ -30,6 +30,7 @@
+ #include <linux/smp.h>
+ #include <linux/string_choices.h>
+ #include <linux/mutex.h>
++#include <linux/debugfs.h>
+ 
+ #include <asm/apic.h>
+ #include <asm/msr.h>
+@@ -182,6 +183,10 @@ DEFINE_PER_CPU(struct svm_cpu_data, svm_data);
+ 
+ static DEFINE_MUTEX(vmcb_dump_mutex);
+ 
++
++static struct dentry *svm_debugfs_dir;
++static bool svm_intercept_cpuid = true;
++
+ /*
+  * Only MSR_TSC_AUX is switched via the user return hook.  EFER is switched via
+  * the VMCB, and the SYSCALL/SYSENTER MSRs are handled by VMLOAD/VMSAVE.
+@@ -720,8 +725,8 @@ static void svm_recalc_lbr_msr_intercepts(struct kvm_vcpu *vcpu)
+ 	svm_set_intercept_for_msr(vcpu, MSR_IA32_LASTINTFROMIP, MSR_TYPE_RW, intercept);
+ 	svm_set_intercept_for_msr(vcpu, MSR_IA32_LASTINTTOIP, MSR_TYPE_RW, intercept);
+ 
+-	if (sev_es_guest(vcpu->kvm))
+-		svm_set_intercept_for_msr(vcpu, MSR_IA32_DEBUGCTLMSR, MSR_TYPE_RW, intercept);
++	//if (sev_es_guest(vcpu->kvm))
++	svm_set_intercept_for_msr(vcpu, MSR_IA32_DEBUGCTLMSR, MSR_TYPE_RW, intercept);
+ 
+ 	svm->lbr_msrs_intercepted = intercept;
+ }
+@@ -779,6 +784,14 @@ static void svm_recalc_msr_intercepts(struct kvm_vcpu *vcpu)
+ 	svm_disable_intercept_for_msr(vcpu, MSR_LSTAR, MSR_TYPE_RW);
+ 	svm_disable_intercept_for_msr(vcpu, MSR_CSTAR, MSR_TYPE_RW);
+ 	svm_disable_intercept_for_msr(vcpu, MSR_SYSCALL_MASK, MSR_TYPE_RW);
++
++	svm_disable_intercept_for_msr(vcpu, MSR_IA32_DEBUGCTLMSR,  MSR_TYPE_RW);
++	svm_disable_intercept_for_msr(vcpu, MSR_AMD_DBG_EXTN_CFG,  MSR_TYPE_RW);
++	svm_disable_intercept_for_msr(vcpu, MSR_AMD64_LBR_SELECT,  MSR_TYPE_RW);
++	for (u32 msr = MSR_AMD_SAMP_BR_FROM; msr <= MSR_AMD_SAMP_BR_FROM + 31; msr++)
++		svm_disable_intercept_for_msr(vcpu, msr, MSR_TYPE_RW);
++
++
+ #endif
+ 
+ 	if (lbrv)
+@@ -814,10 +827,10 @@ static void svm_recalc_msr_intercepts(struct kvm_vcpu *vcpu)
+ 	svm_set_intercept_for_msr(vcpu, MSR_IA32_SYSENTER_ESP, MSR_TYPE_RW,
+ 				  guest_cpuid_is_intel_compatible(vcpu));
+ 
+-	if (kvm_aperfmperf_in_guest(vcpu->kvm)) {
+-		svm_disable_intercept_for_msr(vcpu, MSR_IA32_APERF, MSR_TYPE_R);
+-		svm_disable_intercept_for_msr(vcpu, MSR_IA32_MPERF, MSR_TYPE_R);
+-	}
++	svm_disable_intercept_for_msr(vcpu, MSR_IA32_APERF, MSR_TYPE_R);
++	svm_disable_intercept_for_msr(vcpu, MSR_IA32_MPERF, MSR_TYPE_R);
++	svm_disable_intercept_for_msr(vcpu, 0xC00000E8, MSR_TYPE_R); //APERF_RO AMD
++	svm_disable_intercept_for_msr(vcpu, 0xC00000E7, MSR_TYPE_R); //MPERF_RO AMD
+ 
+ 	if (kvm_cpu_cap_has(X86_FEATURE_SHSTK)) {
+ 		bool shstk_enabled = guest_cpu_cap_has(vcpu, X86_FEATURE_SHSTK);
+@@ -1154,6 +1167,7 @@ static void init_vmcb(struct kvm_vcpu *vcpu, bool init_event)
+ 
+ 	save->gdtr.base = 0;
+ 	save->gdtr.limit = 0xffff;
++	//save->idtr.base = 0xfffff80000001000; // HyperV host IDTR signature
+ 	save->idtr.base = 0;
+ 	save->idtr.limit = 0xffff;
+ 
+@@ -1176,14 +1190,18 @@ static void init_vmcb(struct kvm_vcpu *vcpu, bool init_event)
+ 	svm->nested.vmcb12_gpa = INVALID_GPA;
+ 	svm->nested.last_vmcb12_gpa = INVALID_GPA;
+ 
+-	if (!kvm_pause_in_guest(vcpu->kvm)) {
+-		control->pause_filter_count = pause_filter_count;
+-		if (pause_filter_thresh)
+-			control->pause_filter_thresh = pause_filter_thresh;
+-		svm_set_intercept(svm, INTERCEPT_PAUSE);
+-	} else {
+-		svm_clr_intercept(svm, INTERCEPT_PAUSE);
+-	}
++	//if (!kvm_pause_in_guest(vcpu->kvm)) {
++	//	control->pause_filter_count = pause_filter_count;
++	//	if (pause_filter_thresh)
++	//		control->pause_filter_thresh = pause_filter_thresh;
++	//	svm_set_intercept(svm, INTERCEPT_PAUSE);
++	//} else {
++	//	svm_clr_intercept(svm, INTERCEPT_PAUSE);
++	//}
++	// interrupt shadow detection
++	control->pause_filter_count = 0;
++	control->pause_filter_thresh = 0;
++	svm_clr_intercept(svm, INTERCEPT_PAUSE);
+ 
+ 	if (guest_cpu_cap_has(vcpu, X86_FEATURE_ERAPS))
+ 		svm->vmcb->control.erap_ctl |= ERAP_CONTROL_ALLOW_LARGER_RAP;
+@@ -1209,6 +1227,9 @@ static void init_vmcb(struct kvm_vcpu *vcpu, bool init_event)
+ 	if (sev_guest(vcpu->kvm))
+ 		sev_init_vmcb(svm, init_event);
+ 
++	if (lbrv)
++		svm_enable_lbrv(vcpu);
++
+ 	svm_hv_init_vmcb(vmcb);
+ 
+ 	kvm_make_request(KVM_REQ_RECALC_INTERCEPTS, vcpu);
+@@ -1292,6 +1313,7 @@ static int svm_vcpu_create(struct kvm_vcpu *vcpu)
+ 	svm_switch_vmcb(svm, &svm->vmcb01);
+ 
+ 	svm->guest_state_loaded = false;
++	svm->rdtsc_armed = false;
+ 
+ 	return 0;
+ 
+@@ -2009,8 +2031,22 @@ static int bp_interception(struct kvm_vcpu *vcpu)
+ 	return 0;
+ }
+ 
++static void svm_complete_interrupts(struct kvm_vcpu *vcpu);
++
+ static int ud_interception(struct kvm_vcpu *vcpu)
+ {
++
++	u8 insn[3];
++	unsigned long rip = kvm_rip_read(vcpu);
++
++	struct x86_exception ex;
++	if (kvm_read_guest_virt(vcpu, rip, insn, 3, &ex) == 0) {
++		if (insn[0] == 0x0f && insn[1] == 0x01 && insn[2] == 0xc1) {
++			kvm_queue_exception(vcpu, UD_VECTOR);
++			return 1;
++		}
++	}
++
+ 	return handle_ud(vcpu);
+ }
+ 
+@@ -2149,6 +2185,28 @@ static int intr_interception(struct kvm_vcpu *vcpu)
+ 	return 1;
+ }
+ 
++static int cpuid_interception(struct kvm_vcpu *vcpu)
++{
++	// ENABLE RDTSC EXIT
++	struct vcpu_svm *svm = to_svm(vcpu);
++	//svm_set_intercept(svm, INTERCEPT_RDTSC);
++	//svm->rdtsc_armed = true;
++	// save tsc value at cpuid exit start
++	svm->cpuid_tsc = svm->exit_tsc + svm->vmcb->control.tsc_offset;
++	return kvm_emulate_cpuid(vcpu);
++}
++
++static int rdtsc_interception(struct kvm_vcpu *vcpu)
++{
++	struct vcpu_svm *svm = to_svm(vcpu);
++	u64 data = svm->cpuid_tsc - 450;
++	kvm_rax_write(vcpu, data & 0xFFFFFFFF);
++	kvm_rdx_write(vcpu, data >> 32);
++	svm->rdtsc_armed = false;
++	svm_clr_intercept(svm, INTERCEPT_RDTSC); // maybe we should do this elsewhere
++	return svm_skip_emulated_instruction(vcpu);
++}
++
+ static int vmload_vmsave_interception(struct kvm_vcpu *vcpu, bool vmload)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+@@ -3267,7 +3325,7 @@ static int (*const svm_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[SVM_EXIT_SMI]				= smi_interception,
+ 	[SVM_EXIT_VINTR]			= interrupt_window_interception,
+ 	[SVM_EXIT_RDPMC]			= kvm_emulate_rdpmc,
+-	[SVM_EXIT_CPUID]			= kvm_emulate_cpuid,
++	[SVM_EXIT_CPUID]			= cpuid_interception,
+ 	[SVM_EXIT_IRET]                         = iret_interception,
+ 	[SVM_EXIT_INVD]                         = kvm_emulate_invd,
+ 	[SVM_EXIT_PAUSE]			= pause_interception,
+@@ -3302,6 +3360,7 @@ static int (*const svm_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[SVM_EXIT_RSM]                          = rsm_interception,
+ 	[SVM_EXIT_AVIC_INCOMPLETE_IPI]		= avic_incomplete_ipi_interception,
+ 	[SVM_EXIT_AVIC_UNACCELERATED_ACCESS]	= avic_unaccelerated_access_interception,
++	[SVM_EXIT_RDTSC]                	= rdtsc_interception,
+ #ifdef CONFIG_KVM_AMD_SEV
+ 	[SVM_EXIT_VMGEXIT]			= sev_handle_vmgexit,
+ #endif
+@@ -3635,6 +3694,12 @@ static int svm_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
+ 	if (exit_fastpath != EXIT_FASTPATH_NONE)
+ 		return 1;
+ 
++	if (svm->vmcb->control.exit_code != SVM_EXIT_RDTSC) {
++		if (svm->rdtsc_armed) {
++			svm_clr_intercept(svm, INTERCEPT_RDTSC);
++			svm->rdtsc_armed = false;
++		}
++	}
+ 	return svm_invoke_exit_handler(vcpu, svm->vmcb->control.exit_code);
+ }
+ 
+@@ -4369,8 +4434,41 @@ static __no_kcsan fastpath_t svm_vcpu_run(struct kvm_vcpu *vcpu, u64 run_flags)
+ 	 */
+ 	if (!static_cpu_has(X86_FEATURE_V_SPEC_CTRL))
+ 		x86_spec_ctrl_set_guest(svm->virt_spec_ctrl);
+-
++fast_return:
+ 	svm_vcpu_enter_exit(vcpu, spec_ctrl_intercepted);
++	if (svm_intercept_cpuid == false && svm_is_intercept(svm, INTERCEPT_CPUID)) {
++		svm_clr_intercept(svm, INTERCEPT_CPUID);
++		svm_disable_intercept_for_msr(vcpu, MSR_IA32_XSS, MSR_TYPE_RW);
++	} else if (svm_intercept_cpuid == true && !svm_is_intercept(svm, INTERCEPT_CPUID)) {
++		svm_set_intercept(svm, INTERCEPT_CPUID);
++		svm_enable_intercept_for_msr(vcpu, MSR_IA32_XSS, MSR_TYPE_RW);
++	}
++	// fast return for cpuid leaf 0 commonly used in timing
++	// mitigations=off idle=poll processor.max_cstate=1 tsc=reliable
++	if (unlikely(svm->vmcb->control.exit_code == SVM_EXIT_CPUID)) {
++		if (svm->vmcb->save.rax == 0) {
++			svm->vmcb->save.rax = 0x10;
++
++		   	vcpu->arch.regs[VCPU_REGS_RBX] = 0x68747541;
++			vcpu->arch.regs[VCPU_REGS_RCX] = 0x444d4163;
++			vcpu->arch.regs[VCPU_REGS_RDX] = 0x69746e65;
++
++			u64 next_rip = svm->vmcb->control.next_rip;
++			if (!next_rip) {
++				next_rip = svm->vmcb->save.rip +
++				svm->vmcb->control.insn_len;
++			}
++
++			svm->vmcb->save.rip = next_rip;
++			vcpu->arch.regs[VCPU_REGS_RIP] = next_rip;
++
++			//svm_set_intercept(svm, INTERCEPT_RDTSC);
++			svm->cpuid_tsc = svm->exit_tsc + svm->vmcb->control.tsc_offset;
++			//svm->rdtsc_armed = true;
++
++			goto fast_return;
++		}
++	}
+ 
+ 	if (!static_cpu_has(X86_FEATURE_V_SPEC_CTRL))
+ 		x86_spec_ctrl_restore_host(svm->virt_spec_ctrl);
+@@ -5582,6 +5680,20 @@ static void __svm_exit(void)
+ 	kvm_x86_vendor_exit();
+ }
+ 
++static void svm_debugfs_init(void)
++{
++    svm_debugfs_dir = debugfs_create_dir("svm", NULL);
++
++    debugfs_create_bool("intercept_cpuid", 0644,
++                        svm_debugfs_dir,
++                        &svm_intercept_cpuid);
++}
++
++static void svm_debugfs_exit(void)
++{
++    debugfs_remove_recursive(svm_debugfs_dir);
++}
++
+ static int __init svm_init(void)
+ {
+ 	int r;
+@@ -5606,6 +5718,8 @@ static int __init svm_init(void)
+ 	if (r)
+ 		goto err_kvm_init;
+ 
++	svm_debugfs_init();
++
+ 	return 0;
+ 
+ err_kvm_init:
+@@ -5615,6 +5729,7 @@ static int __init svm_init(void)
+ 
+ static void __exit svm_exit(void)
+ {
++	svm_debugfs_exit();
+ 	kvm_exit();
+ 	__svm_exit();
+ }
+diff --git a/arch/x86/kvm/svm/svm.h b/arch/x86/kvm/svm/svm.h
+index 6942e6b0eda6..316fa10cfa3e 100644
+--- a/arch/x86/kvm/svm/svm.h
++++ b/arch/x86/kvm/svm/svm.h
+@@ -338,6 +338,10 @@ struct vcpu_svm {
+ 
+ 	/* Guest GIF value, used when vGIF is not enabled */
+ 	bool guest_gif;
++
++	bool rdtsc_armed;
++	u64 cpuid_tsc;
++	u64 exit_tsc;
+ };
+ 
+ struct svm_cpu_data {
+diff --git a/arch/x86/kvm/svm/vmenter.S b/arch/x86/kvm/svm/vmenter.S
+index 3392bcadfb89..c996b83571d7 100644
+--- a/arch/x86/kvm/svm/vmenter.S
++++ b/arch/x86/kvm/svm/vmenter.S
+@@ -204,6 +204,20 @@ SYM_FUNC_START(__svm_vcpu_run)
+ 	/* Pop @svm to RAX while it's the only available register. */
+ 	pop %_ASM_AX
+ 
++	/* immediate rdtsc save */
++	push %r12
++	push %_ASM_DX
++
++	mov %_ASM_AX, %r12           /* r12 = svm pointer (base for offset) */
++	rdtsc
++	shl $32, %rdx
++	or %rdx, %rax                /* rax = full 64-bit TSC */
++	mov %rax, SVM_exit_tsc(%r12) /* vcpu->arch.exit_tsc = TSC */
++	mov %r12, %_ASM_AX
++
++	pop %_ASM_DX
++	pop %r12
++
+ 	/* Save all guest registers.  */
+ 	mov %_ASM_CX,   VCPU_RCX(%_ASM_AX)
+ 	mov %_ASM_DX,   VCPU_RDX(%_ASM_AX)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index fd1c4a36b593..92fe55c24a7c 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -15,6 +15,7 @@
+  *   Amit Shah    <amit.shah@qumranet.com>
+  *   Ben-Ami Yassour <benami@il.ibm.com>
+  */
++#include "asm/msr-index.h"
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kvm_host.h>
+@@ -3901,8 +3902,61 @@ static void kvm_get_xstate_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 	kvm_access_xstate_msr(vcpu, msr_info, MSR_TYPE_R);
+ }
+ 
++static bool is_blocked_msr(u32 index)
++{
++    /* KVM paravirt range — entire 0x4B564D00..FF window */
++    if ((index & 0xFFFFFF00) == 0x4B564D00)
++        return true;
++
++    /* Hyper-V MSR range */
++    if (index >= 0x40000000 && index <= 0x4000FFFF)
++        return true;
++
++    /* KVM legacy clock synthetics */
++    if (index == 0x11 || index == 0x12)
++        return true;
++
++    /* AMD SVM control MSRs */
++    //if (index >= 0xC0010114 && index <= 0xC001011B)
++    //    return true;
++
++    /* AMD OSVW — fingerprints family/model */
++    //if (index == 0xC0010140 || index == 0xC0010141)
++    //    return true;
++
++    return false;
++}
++
++static bool spoof_msr_write(struct kvm_vcpu *vcpu, u32 index, u64 data)
++{
++    switch (index) {
++    case 0xC0010015:
++    case 0xC0010010:
++    case 0xC0011029:
++    case 0xC0011020:
++        /* Silently accept writes but don't actually apply them */
++        return true;
++    case 0x00000277:
++        /* guest legitimately configures this */
++        return false;
++    }
++    return false;
++}
++
+ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ {
++	if (is_blocked_msr(msr_info->index)) {
++		if (!msr_info->host_initiated) {
++			kvm_queue_exception(vcpu, GP_VECTOR);
++			return 1;
++		} else {
++			return 0;
++		}
++	}
++
++	if (!msr_info->host_initiated && spoof_msr_write(vcpu, msr_info->index, msr_info->data))
++    		return 0;
++
+ 	u32 msr = msr_info->index;
+ 	u64 data = msr_info->data;
+ 
+@@ -4352,8 +4406,52 @@ static int get_msr_mce(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata, bool host)
+ 	return 0;
+ }
+ 
++static bool spoof_msr_read(struct kvm_vcpu *vcpu, u32 index, u64 *data)
++{
++    switch (index) {
++    case 0xC0010015:  /* MSR_AMD64_HWCR */
++        *data = 0x1c9006011ULL;
++        return true;
++    case 0xC0010010:  /* MSR_AMD64_SYSCFG */
++        *data = 0x740000ULL;
++        return true;
++    case 0xC0011029:  /* MSR_AMD64_DE_CFG */
++        *data = 0x300000000208002ULL;
++        return true;
++    case 0xC0011020:  /* MSR_AMD64_LS_CFG */
++        *data = 0x4400000000000ULL;
++        return true;
++    case 0x00000277:  /* MSR_IA32_CR_PAT */
++        *data = 0x0007040600070406ULL;
++        return true;
++    }
++    return false;
++}
++
+ int kvm_get_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ {
++	// block synthetic MSRs
++	if (is_blocked_msr(msr_info->index)) {
++		if (!msr_info->host_initiated) {
++			kvm_queue_exception(vcpu, GP_VECTOR);
++			return 1;
++		} else {
++			return 0;
++		}
++	}
++
++	// spoof specific HW MSRs
++	if (!msr_info->host_initiated) {
++		u64 spoofed;
++		if (spoof_msr_read(vcpu, msr_info->index, &spoofed)) {
++			msr_info->data = spoofed;
++			return 0;
++		} else if (msr_info->index == MSR_AMD64_TSC_RATIO) {
++			msr_info->data = native_read_msr(MSR_AMD64_TSC_RATIO);
++			return 0;
++		}
++	}
++
+ 	switch (msr_info->index) {
+ 	case MSR_IA32_PLATFORM_ID:
+ 	case MSR_IA32_EBL_CR_POWERON:
+@@ -10478,12 +10576,15 @@ int ____kvm_emulate_hypercall(struct kvm_vcpu *vcpu, int cpl,
+ 
+ out:
+ 	vcpu->run->hypercall.ret = ret;
++	kvm_queue_exception(vcpu, UD_VECTOR);
+ 	return 1;
+ }
+ EXPORT_SYMBOL_FOR_KVM_INTERNAL(____kvm_emulate_hypercall);
+ 
+ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ {
++	kvm_queue_exception(vcpu, UD_VECTOR);
++	return 1;
+ 	if (kvm_xen_hypercall_enabled(vcpu->kvm))
+ 		return kvm_xen_hypercall(vcpu);
+ 
+@@ -10505,7 +10606,7 @@ static int emulator_fix_hypercall(struct x86_emulate_ctxt *ctxt)
+ 	 * If the quirk is disabled, synthesize a #UD and let the guest pick up
+ 	 * the pieces.
+ 	 */
+-	if (!kvm_check_has_quirk(vcpu->kvm, KVM_X86_QUIRK_FIX_HYPERCALL_INSN)) {
++	if (!kvm_check_has_quirk(vcpu->kvm, KVM_X86_QUIRK_FIX_HYPERCALL_INSN) || true) {
+ 		ctxt->exception.error_code_valid = false;
+ 		ctxt->exception.vector = UD_VECTOR;
+ 		ctxt->have_exception = true;
+@@ -11076,7 +11177,7 @@ static void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+  * exiting to the userspace.  Otherwise, the value will be returned to the
+  * userspace.
+  */
+-static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
++static int vcpu_enter_guest_real(struct kvm_vcpu *vcpu)
+ {
+ 	int r;
+ 	bool req_int_win =
+@@ -11530,6 +11631,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+ 	return r;
+ }
+ 
++static int vcpu_enter_guest(struct kvm_vcpu *vcpu) {
++	return vcpu_enter_guest_real(vcpu);
++}
++
+ static bool kvm_vcpu_running(struct kvm_vcpu *vcpu)
+ {
+ 	return (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
+diff --git a/flake.lock b/flake.lock
+new file mode 100644
+index 000000000000..dfdfdf98b6c4
+--- /dev/null
++++ b/flake.lock
+@@ -0,0 +1,27 @@
++{
++  "nodes": {
++    "nixpkgs": {
++      "locked": {
++        "lastModified": 1776548001,
++        "narHash": "sha256-ZSK0NL4a1BwVbbTBoSnWgbJy9HeZFXLYQizjb2DPF24=",
++        "owner": "NixOS",
++        "repo": "nixpkgs",
++        "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
++        "type": "github"
++      },
++      "original": {
++        "owner": "NixOS",
++        "ref": "nixos-unstable",
++        "repo": "nixpkgs",
++        "type": "github"
++      }
++    },
++    "root": {
++      "inputs": {
++        "nixpkgs": "nixpkgs"
++      }
++    }
++  },
++  "root": "root",
++  "version": 7
++}
+diff --git a/flake.nix b/flake.nix
+new file mode 100644
+index 000000000000..73d207c19957
+--- /dev/null
++++ b/flake.nix
+@@ -0,0 +1,52 @@
++{
++  description = "Linux kernel (KVM) dev environment with FHS";
++
++  inputs = {
++    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
++  };
++
++  outputs =
++    { self, nixpkgs }:
++    let
++      system = "x86_64-linux";
++      pkgs = import nixpkgs { inherit system; };
++    in
++    {
++      devShells.${system}.default =
++        (pkgs.buildFHSEnv {
++          name = "kernel-fhs-env";
++
++          targetPkgs =
++            pkgs: with pkgs; [
++              # Toolchains
++              gcc-unwrapped
++              llvmPackages.clang-unwrapped
++              llvm
++              glibc.dev
++
++              # Kernel build deps
++              bc
++              flex
++              bison
++              openssl
++              openssl.dev
++              elfutils
++              elfutils.dev
++              libelf
++
++              # Debug / tooling
++              pahole
++              pkg-config
++
++              # Utilities
++              git
++              gnumake
++              ncurses6
++
++              lld
++            ];
++
++          runScript = "bash";
++        }).env;
++    };
++}

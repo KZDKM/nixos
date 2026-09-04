@@ -9,7 +9,7 @@ let
   uBlockRelease = pkgs.lib.importJSON (
     builtins.fetchurl {
       url = "https://api.github.com/repos/gorhill/uBlock/releases/latest";
-      sha256 = "sha256:1q087ajzx3h0r9razh6pzkc9y3d0wxpxn0ggnvqax0wxcrcapp8i";
+      sha256 = "sha256:01ndjxbfci3in373cf075v0k2nbwvqf0lqazvlxhk8pal6gnrxvg";
     }
   );
   uBlockUrl = builtins.head (
@@ -21,7 +21,7 @@ in
     enable = true;
   };
   environment.systemPackages = [
-    (pkgs.wrapFirefox (inputs.zen-browser.packages."${system}".beta-unwrapped.override {
+    (pkgs.wrapFirefox (inputs.zen-browser.packages."${system}".zen-browser-unwrapped.override {
       policies = {
         DisableTelemetry = true;
         DontCheckDefaultBrowser = true;
@@ -38,11 +38,11 @@ in
   xdg.mime = {
     enable = true;
     defaultApplications = {
-      "text/html" = "zen-beta.desktop";
-      "x-scheme-handler/http" = "zen-beta.desktop";
-      "x-scheme-handler/https" = "zen-beta.desktop";
-      "x-scheme-handler/about" = "zen-beta.desktop";
-      "x-scheme-handler/unknown" = "zen-beta.desktop";
+      "text/html" = "zen.desktop";
+      "x-scheme-handler/http" = "zen.desktop";
+      "x-scheme-handler/https" = "zen.desktop";
+      "x-scheme-handler/about" = "zen.desktop";
+      "x-scheme-handler/unknown" = "zen.desktop";
     };
   };
 }

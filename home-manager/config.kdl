@@ -1,0 +1,354 @@
+gestures {
+    hot-corners {
+        off
+    }
+}
+
+spawn-sh-at-startup "noctalia-shell"
+//spawn-at-startup "vicinae" "server"
+spawn-at-startup "wayland-pipewire-idle-inhibit"
+spawn-at-startup "kdeconnectd"
+
+input {
+	focus-follows-mouse max-scroll-amount="40%"
+	warp-mouse-to-focus
+	mouse {
+		accel-profile "flat"
+	}
+}
+
+output "Invalid Vendor Codename - RTK RTK QHD HDR 0x01010101" {
+	transform "270"
+	position x=-900 y=-220
+	mode "2560x1600@99.999"
+	scale 1.6
+	layout {
+		default-column-width { proportion 1.0; }
+	}
+}
+
+output "PNP(AOC) Q27G3XMN 1APQ7JA003861" {
+	focus-at-startup
+	variable-refresh-rate on-demand=true
+	mode "2560x1440@170.002"
+	position x=0 y=0
+}
+
+output "ASUSTek COMPUTER INC XG27ACMES W4LMTF186288 " {
+	focus-at-startup
+	variable-refresh-rate on-demand=true
+	mode "2560x1440@239.970"
+	position x=0 y=0
+}
+
+output "ViewSonic Corporation VX2719-2K-PRO VZC204000021" {
+    transform "90"
+	mode "2560x1440@165.003"
+    position x=-1440 y=-500
+}
+
+output "Samsung Electric Company SAMSUNG 0x01000E00" {
+	mode "4096x2160@60.000"
+	scale 1.5
+
+}
+
+layout {
+    gaps 12
+    background-color "#000"
+    always-center-single-column
+    center-focused-column "never"
+
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    default-column-width { proportion 0.5; }
+
+    focus-ring {
+        // off
+        width 1
+        active-color "#ffffff33"
+    }
+
+    border {
+        // off
+        width 1
+        active-color "#333"
+        inactive-color "#222"
+    }
+
+    shadow {
+        on
+        softness 20
+        spread 5
+        offset x=0 y=5
+    }
+
+    tab-indicator {
+        width 6
+        gap 2
+        gaps-between-tabs 4
+        corner-radius 10
+        active-color "#fff"
+        inactive-color "#ffffff88"
+    }
+
+    insert-hint {
+        color "#ffffff22"
+    }
+}
+
+prefer-no-csd
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+animations {
+    window-open {
+        spring damping-ratio=1.0 stiffness=700 epsilon=0.0001
+    }
+    window-close {
+        spring damping-ratio=1.0 stiffness=700 epsilon=0.1
+    }
+    window-resize {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.001
+    }
+    window-movement {
+        spring damping-ratio=1.0 stiffness=600 epsilon=0.0001
+    }
+    overview-open-close {
+        spring damping-ratio=1.0 stiffness=900 epsilon=0.0001
+    }
+    workspace-switch {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.00001
+    }
+    horizontal-view-movement {
+        spring damping-ratio=1.0 stiffness=700 epsilon=0.0001
+    }
+}
+
+// windows that should start small
+window-rule {
+	match app-id="com.raggesilver.BlackBox"
+	match app-id="org.gnome.Nautilus"
+    default-column-width { proportion 0.33333; }
+}
+// windows that should start big
+window-rule {
+    match app-id="dev.zed.Zed"
+    match app-id="zen"
+    default-column-width { proportion 0.66667; }
+}
+
+
+// Float small windows
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+	match title="vrmonitor"
+	match title="好友列表"
+	match app-id="io.gitlab.idevecore.Pomodoro"
+    open-floating true
+	open-focused false
+}
+
+window-rule {
+    match app-id="looking-glass-client"
+    open-fullscreen true
+    block-out-from "screencast"
+    open-on-output "PNP(AOC) Q27G3XMN 1APQ7JA003861"
+}
+
+// VRR windows
+window-rule {
+	match app-id=r#"^(steam_app_)(.*)$"#
+	match app-id="cs2"
+    match app-id="looking-glass-client"
+	match title="Ready Or Not"
+	match title="memflow mirror"
+	variable-refresh-rate true
+	allow-tearing true
+}
+
+// Example: enable rounded corners for all windows.
+window-rule {
+    geometry-corner-radius 16
+    clip-to-geometry true
+}
+
+// popup notifications
+window-rule {
+    match app-id="steam" title=r#"^notificationtoasts_\d+_desktop$"#
+    default-floating-position x=10 y=10 relative-to="bottom-right"
+    open-floating true
+	open-focused false
+}
+
+// overview wallpaper
+layer-rule {
+  match namespace="^noctalia-overview*"
+  place-within-backdrop true
+}
+
+binds {
+    // Mod-Shift-/, which is usually the same as Mod-?,
+    // shows a list of important hotkeys.
+    Mod+Shift+Slash { show-hotkey-overlay; }
+
+    Mod+Tab repeat=false { toggle-overview; }
+
+    // Suggested binds for running programs: terminal, app launcher, screen locker.
+    Mod+T { spawn "blackbox"; }
+    Mod+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    //Mod+Space { spawn "vicinae" "toggle"; }
+    Mod+L { spawn "hyprlock"; }
+    Mod+E { spawn "nautilus" "-w"; }
+    Mod+B { spawn "zen"; }
+    Mod+Escape { spawn "ignis" "toggle-window" "PowerMenu"; }
+    Mod+I { spawn "ignis" "toggle-window" "Settings"; }
+
+    // Example volume keys mappings for PipeWire & WirePlumber.
+    // The allow-when-locked=true property makes them work even when the session is locked.
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
+    XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
+
+    Mod+Backspace repeat=false { close-window; }
+
+    Mod+Left  { focus-column-left; }
+    Mod+Down  { focus-window-down; }
+    Mod+Up    { focus-window-up; }
+    Mod+Right { focus-column-right; }
+
+    Mod+Ctrl+Left  { move-column-left; }
+    Mod+Ctrl+Down  { move-window-down; }
+    Mod+Ctrl+Up    { move-window-up; }
+    Mod+Ctrl+Right { move-column-right; }
+
+    Mod+Home { focus-column-first; }
+    Mod+End  { focus-column-last; }
+    Mod+Ctrl+Home { move-column-to-first; }
+    Mod+Ctrl+End  { move-column-to-last; }
+
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Down  { focus-monitor-down; }
+    Mod+Shift+Up    { focus-monitor-up; }
+    Mod+Shift+Right { focus-monitor-right; }
+
+    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+
+    Mod+Page_Down      { focus-workspace-down; }
+    Mod+Page_Up        { focus-workspace-up; }
+    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+
+    Mod+Shift+Page_Down { move-workspace-down; }
+    Mod+Shift+Page_Up   { move-workspace-up; }
+
+    Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+    Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+
+    Mod+WheelScrollRight      { focus-column-right; }
+    Mod+WheelScrollLeft       { focus-column-left; }
+    Mod+Ctrl+WheelScrollRight { move-column-right; }
+    Mod+Ctrl+WheelScrollLeft  { move-column-left; }
+
+    // Usually scrolling up and down with Shift in applications results in
+    // horizontal scrolling; these binds replicate that.
+    Mod+Shift+WheelScrollDown      { focus-column-right; }
+    Mod+Shift+WheelScrollUp        { focus-column-left; }
+    Mod+Shift+Ctrl+WheelScrollDown { move-column-right; }
+    Mod+Shift+Ctrl+WheelScrollUp   { move-column-left; }
+
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+8 { move-column-to-workspace 8; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    Mod+BracketLeft  { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+
+    // Consume one window from the right to the bottom of the focused column.
+    Mod+Comma  { consume-window-into-column; }
+    // Expel the bottom window from the focused column to the right.
+    Mod+Period { expel-window-from-column; }
+
+    Mod+R { switch-preset-column-width; }
+    Mod+Shift+R { switch-preset-window-height; }
+    Mod+Ctrl+R { reset-window-height; }
+    Mod+Return { maximize-column; }
+    Mod+Shift+Return { fullscreen-window; }
+    Mod+Ctrl+Return { toggle-windowed-fullscreen; }
+    Mod+C { center-column; }
+    Mod+W { toggle-column-tabbed-display; }
+
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+Equal { set-column-width "+10%"; }
+
+    // Finer height adjustments when in column with other windows.
+    Mod+Shift+Minus { set-window-height "-10%"; }
+    Mod+Shift+Equal { set-window-height "+10%"; }
+
+    // Move the focused window between the floating and the tiling layout.
+    Mod+F       { toggle-window-floating; }
+    Mod+Shift+F { switch-focus-between-floating-and-tiling; }
+
+    Print { screenshot show-pointer=false; }
+    Shift+Print { screenshot-window; }
+    Ctrl+Print { screenshot-screen show-pointer=false; }
+
+    Mod+Shift+Alt+R { spawn "ignis" "run-command" "recorder-record-screen"; }
+    Mod+Alt+R { spawn "ignis" "run-command" "recorder-record-portal"; }
+
+	//Ctrl+Space { spawn "fcitx5-remote" "-t"; }
+	Mod+Shift+Q { quit; }
+}
+
+overview {
+    backdrop-color "#000"
+    zoom 0.4
+}
+
+hotkey-overlay {
+    skip-at-startup
+    hide-not-bound
+}
+
+recent-windows {
+    highlight {
+        corner-radius 12
+    }
+    previews {
+        max-height 720
+        max-scale 0.75
+    }
+}
+
+environment {
+    GTK_IM_MODULE "fcitx"
+}
+
+debug {
+	render-drm-device "/dev/dri/renderD128"
+}

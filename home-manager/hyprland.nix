@@ -15,8 +15,8 @@
     package = null;
     portalPackage = null;
     plugins = [
-      inputs.Hyprspace.packages."${system}".default
-      inputs.Hedge.packages."${system}".default
+      #inputs.Hyprspace.packages."${system}".default
+      #inputs.Hedge.packages."${system}".default
     ];
     settings = {
       monitor = [
@@ -24,12 +24,12 @@
       ];
       exec-once = [
         "hyprpm reload"
-        "ags-shell"
         "uwsm finalize"
         "easyeffects --gapplication-service"
         "sway-audio-idle-inhibit"
-        "hyprsunset"
+        #"hyprsunset"
         "fcitx5 -r -d"
+        "noctalia-shell"
       ];
       env = [
         "HYPRCURSOR_THEME, Bibata-Original-Classic"
@@ -78,27 +78,30 @@
       };
       animations = {
         enabled = true;
-        first_launch_animation = false;
-        bezier = [
-          "easeOut, 0, 1, .2, 1"
-        ];
-        animation = [
-          "windows, 1, 3, easeOut"
-          "windowsOut, 1, 1, default, popin 80%"
-          "border, 1, 5, default"
-          "borderangle, 1, 6, default"
-          "fade, 1, 2, default"
-          "workspaces, 1, 3, easeOut"
-          "layers, 1, 2, easeOut"
-        ];
       };
+      bezier = [
+        "myBezier, 0, 1, 0.7, 1"
+        "easeOut, 0,1,0.2,1"
+        "overshot,0.7,0.6,0.1,1.1"
+      ];
+      animation = [
+        "windows,1,3,easeOut"
+        "windowsOut,1,3,easeOut"
+        "border,1,1,default"
+        "fade,1,2,default"
+        "workspaces,1,4,easeOut"
+        "layersIn,1,4,easeOut"
+        "layersOut,1,4,myBezier"
+        "specialWorkspace,1,4,easeOut,slidefade 10%"
+      ];
       dwindle = {
         pseudotile = true;
         preserve_split = true;
       };
+      gesture = [
+        "3, horizontal, workspace"
+      ];
       gestures = {
-        workspace_swipe = true;
-        workspace_swipe_fingers = 3;
         workspace_swipe_forever = true;
         workspace_swipe_use_r = true;
         workspace_swipe_distance = 600;
@@ -111,7 +114,6 @@
         focus_on_activate = true;
         background_color = "0x000000";
         disable_hyprland_logo = true;
-        new_window_takes_over_fullscreen = 2;
       };
       render = {
         direct_scanout = true;
@@ -148,7 +150,6 @@
         no_donation_nag = true;
       };
       experimental = {
-        xx_color_management_v4 = true;
       };
 
       windowrule = [
@@ -171,34 +172,7 @@
         "suppressevent activate, class: steam"
         "suppressevent activatefocus, class: steam"
       ];
-      # TODO: let ags set the rules
       layerrule = [
-        "blur, rofi"
-        "ignorezero, rofi"
-        "blur, swayosd"
-        "ignorezero, swayosd"
-        "blur, waybar"
-        "ignorezero, waybar"
-        "xray 1, waybar"
-        "blur, bar"
-        "ignorezero, bar"
-        "xray 1, bar"
-        "blur, dock"
-        "ignorezero, dock"
-        "animation slide, bar"
-        "animation slide, dock"
-        "blurpopups, bar"
-        "blurpopups, dock"
-        "blur, players"
-        "ignorezero, players"
-        "blur, applauncher"
-        "ignorezero, applauncher"
-        "blur, notifications0"
-        "ignorezero, notifications0"
-        "blur, quicksettings"
-        "ignorezero, quicksettings"
-        "blur, notifications"
-        "ignorezero, notifications"
       ];
       "$mainMod" = "SUPER";
       bind = [
@@ -208,10 +182,10 @@
         "$mainMod SHIFT, Q, exec, uwsm stop"
         "$mainMod, E, exec, nautilus -w"
         "$mainMod, F, togglefloating, "
-        "$mainMod, Space, exec, ags toggle applauncher"
+        "$mainMod, Space, exec, noctalia-shell ipc call launcher toggle"
         "$mainMod, P, pseudo,"
         "$mainMod, J, togglesplit, "
-        "$mainMod, D, exec, ags toggle dock"
+        #"$mainMod, D, exec, ags toggle dock"
         "$mainMod, Return, fullscreen, 1"
         "$mainMod SHIFT, Return, fullscreen"
         "$mainMod, TAB, exec, hyprctl dispatch overview:toggle"
@@ -267,9 +241,9 @@
         "$mainMod, mouse:272, movewindow"
         "bindm = $mainMod, mouse:273, resizewindow"
       ];
-      hotedge = [
-        "DP-1,bottom,8,128,ags request 'show dock',ags request 'hide dock',1"
-      ];
+      #hotedge = [
+      #  "DP-1,bottom,8,128,ags request 'show dock',ags request 'hide dock',1"
+      #];
     };
   };
 }
