@@ -22,12 +22,20 @@
 
 ## Layout
 
-- `hosts/nixos/` - host specific config, hardware and stateVersion
-- `modules/nixos/` - system modules
-  - `core/` - boot, nix, locale, users, networking, performance
+- `hosts/<host>/` - per host config, hardware and stateVersion
+  - `nixos` - desktop, imports vr/virtualisation/gaming on top of the shared modules
+  - `macbook` - apple silicon (asahi), build with `--impure` so firmware is read from the ESP
+- `modules/nixos/` - system modules, `default.nix` is shared by all hosts
+  - `core/` - nix, locale, users, networking, performance
   - `desktop/` - session, audio, fonts, theming, input method
-  - `virtualisation/` - libvirt, vfio passthrough, looking-glass, samba
-  - `vr/`, `gaming.nix`, `dev.nix`, `browser.nix`, `apps.nix`, `nix-ld.nix`
+  - `virtualisation/`, `vr/`, `gaming.nix` - imported by the desktop only
 - `pkgs/` - local packages
-- `home/` - home-manager config
+- `home/` - home-manager config, `hosts/<host>.nix` for host specific bits
+  - `niri/config.kdl` includes `host.kdl`, from `niri/hosts/<host>.kdl`
 - `old/` - retired configs, not imported
+
+```
+sudo nixos-rebuild switch --flake .#nixos
+sudo nixos-rebuild switch --flake .#macbook --impure
+home-manager switch --flake .#kzdkm@<host>
+```

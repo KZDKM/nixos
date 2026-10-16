@@ -1,6 +1,9 @@
+# shared by all hosts, host specific modules are imported in hosts/<host>
+{ inputs, ... }:
 {
   imports = [
-    ./core/boot.nix
+    inputs.noctalia.nixosModules.default
+
     ./core/nix.nix
     ./core/locale.nix
     ./core/users.nix
@@ -18,9 +21,6 @@
     ./browser.nix
     #../../old/spicetify.nix
     #../../old/uuplugin/uuplugin.nix
-    ./vr
-    ./virtualisation
-    ./gaming.nix
     ./dev.nix
   ];
 }

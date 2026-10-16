@@ -13,11 +13,9 @@
     ./niri
     ./zed.nix
     ./idle.nix
-    ./vr.nix
   ];
   home = {
     username = "kzdkm";
     homeDirectory = "/home/kzdkm";
-    stateVersion = "24.11"; # Please read the comment before changing.
   };
 }

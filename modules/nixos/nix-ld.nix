@@ -1,6 +1,7 @@
 {
   inputs,
   config,
+  lib,
   pkgs,
   system,
   ...
@@ -21,7 +22,6 @@
       dbus.lib
       fontconfig.lib
       freetype.out
-      glamoroustoolkit.out
       glib.out
       libgbm.out
       libgcc.lib
@@ -69,6 +69,10 @@
 
       llvmPackages.libclang
 
+    ]
+    # beamng, x86_64 only
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
+      pkgs.glamoroustoolkit.out
     ];
   };
   environment.systemPackages = [

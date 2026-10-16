@@ -7,9 +7,21 @@
 }:
 {
   imports = [
+    #inputs.lanzaboote.nixosModules.lanzaboote
+    inputs.barely-metal.nixosModules.default
+    inputs.nixos-facter-modules.nixosModules.facter
+    inputs.nixpkgs-xr.nixosModules.nixpkgs-xr
+
     ./hardware-configuration.nix
     ./hardware.nix
+    ./boot.nix
+    ./performance.nix
+    ./apps.nix
+
     ../../modules/nixos
+    ../../modules/nixos/vr
+    ../../modules/nixos/virtualisation
+    ../../modules/nixos/gaming.nix
   ];
 
   networking.hostName = "nixos";

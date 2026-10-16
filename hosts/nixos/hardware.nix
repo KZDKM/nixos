@@ -15,6 +15,7 @@ in
 {
   hardware.amdgpu.initrd.enable = false;
   hardware.i2c.enable = true;
+  users.users.kzdkm.extraGroups = [ "i2c" ];
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
   hardware.graphics = {

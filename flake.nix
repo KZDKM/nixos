@@ -51,6 +51,11 @@
     };
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
 
+    nixos-apple-silicon = {
+      url = "github:nix-community/nixos-apple-silicon";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
 
     claude-desktop-nix.url = "github:tomsch/claude-desktop-nix";
@@ -61,46 +66,41 @@
       self,
       nixpkgs,
       home-manager,
-      barely-metal,
-      nixos-facter-modules,
-      nixpkgs-xr,
       ...
     }@inputs:
     let
       inherit (self) outputs;
-      system = "x86_64-linux";
-    in
-    {
-      nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-        specialArgs = {
-          inherit
-            inputs
-            outputs
-            system
-            ;
+      mkHost =
+        host: system:
+        nixpkgs.lib.nixosSystem {
+          specialArgs = {
+            inherit
+              inputs
+              outputs
+              system
+              ;
+          };
+          modules = [ ./hosts/${host} ];
         };
-        modules = [
-          #lanzaboote.nixosModules.lanzaboote
-          barely-metal.nixosModules.default
-          nixos-facter-modules.nixosModules.facter
-          nixpkgs-xr.nixosModules.nixpkgs-xr
-          inputs.noctalia.nixosModules.default
-          ./hosts/nixos
-        ];
-      };
-      # TODO: maybe convert to standalone
-      homeConfigurations = {
-        "kzdkm@nixos" = home-manager.lib.homeManagerConfiguration {
+      mkHome =
+        host: system:
+        home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.${system};
           extraSpecialArgs = { inherit inputs outputs system; };
           modules = [
-            {
-              nixpkgs.overlays = [ nixpkgs-xr.overlays.default ];
-
-            }
             ./home
+            ./home/hosts/${host}.nix
           ];
         };
+    in
+    {
+      nixosConfigurations = {
+        nixos = mkHost "nixos" "x86_64-linux";
+        macbook = mkHost "macbook" "aarch64-linux";
+      };
+      homeConfigurations = {
+        "kzdkm@nixos" = mkHome "nixos" "x86_64-linux";
+        "kzdkm@macbook" = mkHome "macbook" "aarch64-linux";
       };
     };
 }

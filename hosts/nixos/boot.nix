@@ -29,7 +29,7 @@
     initrd = {
       verbose = false;
     };
-    # keep in sync with the dgpu-passthrough specialisation in virtualisation/vfio.nix
+    # keep in sync with the dgpu-passthrough specialisation in modules/nixos/virtualisation/vfio.nix
     kernelParams = [
       "quiet"
       "splash"

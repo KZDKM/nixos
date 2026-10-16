@@ -39,7 +39,6 @@
     NIXOS_OZONE_WL = "1";
     QS_ICON_THEME = "MoreWaita";
   };
-  environment.etc."niri/config.kdl".source = ../../../home/niri/config.kdl;
 
   programs.noctalia = {
     enable = true;

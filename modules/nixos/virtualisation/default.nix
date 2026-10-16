@@ -77,6 +77,13 @@ in
     docker.enable = true;
   };
 
+  users.users.kzdkm.extraGroups = [
+    "libvirtd"
+    "docker"
+    "kvm"
+    "memflow"
+  ];
+
   programs.virt-manager.enable = true;
   programs.dconf.profiles.user.databases = [
     {

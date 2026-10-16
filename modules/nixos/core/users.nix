@@ -14,12 +14,7 @@
     extraGroups = [
       "networkmanager"
       "wheel"
-      "libvirtd"
-      "docker"
-      "i2c"
-      "kvm"
       "input"
-      "memflow"
     ];
   };
 

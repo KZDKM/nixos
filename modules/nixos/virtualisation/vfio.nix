@@ -81,7 +81,7 @@ in
     dgpu-passthrough.configuration = {
       boot.kernelParams = lib.mkForce (
         [
-          # keep in sync with core/boot.nix
+          # keep in sync with hosts/nixos/boot.nix
           "quiet"
           "splash"
           "boot.shell_on_fail"

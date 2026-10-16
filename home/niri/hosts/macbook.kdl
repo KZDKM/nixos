@@ -1,0 +1,14 @@
+// macbook specific, included from config.kdl
+
+input {
+	touchpad {
+		natural-scroll
+		click-method "clickfinger"
+		dwt
+	}
+}
+
+// built-in display, check the name with `niri msg outputs`
+//output "eDP-1" {
+//	scale 2
+//}

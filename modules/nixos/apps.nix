@@ -74,8 +74,6 @@
     pkgs.pomodoro-gtk
     pkgs.lmstudio
     pkgs.lmstudio-bionic
-    inputs.claude-desktop-nix.packages.x86_64-linux.default
-    pkgs.jan
     pkgs.qbittorrent
 
     # utilities
