@@ -86,11 +86,12 @@ animations {
         spring damping-ratio=1.0 stiffness=900 epsilon=0.0001
     }
     workspace-switch {
-        spring damping-ratio=1.0 stiffness=800 epsilon=0.00001
+        spring damping-ratio=1.0 stiffness=400 epsilon=0.0001
     }
     horizontal-view-movement {
-        spring damping-ratio=1.0 stiffness=700 epsilon=0.0001
+        spring damping-ratio=1.0 stiffness=400 epsilon=0.0001
     }
+
 }
 
 // windows that should start small
@@ -168,6 +169,14 @@ binds {
     XF86AudioLowerVolume allow-when-locked=true { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
     XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
     XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
+
+    XF86LaunchA repeat=false { toggle-overview; }
+    XF86Search repeat=false { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
+
+    // Example brightness key mappings for brightnessctl.
+    XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "-e2" "set" "+10%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "-e2" "set" "10%-"; }
+
 
     Mod+Backspace repeat=false { close-window; }
 
@@ -268,6 +277,7 @@ binds {
     Mod+F       { toggle-window-floating; }
     Mod+Shift+F { switch-focus-between-floating-and-tiling; }
 
+    Ctrl+Shift+4 { screenshot; }
     Print { screenshot show-pointer=false; }
     Shift+Print { screenshot-window; }
     Ctrl+Print { screenshot-screen show-pointer=false; }

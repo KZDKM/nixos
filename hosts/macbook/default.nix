@@ -37,7 +37,7 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = false;
 
-  networking.hostName = "macbook";
+  networking.hostName = "KZDKMs-MBP-NixOS";
   # wpa_supplicant lacks WPA3 on the broadcom chips
   networking.networkmanager.wifi.backend = "iwd";
 
