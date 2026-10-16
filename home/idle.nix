@@ -6,42 +6,6 @@
   ...
 }:
 {
-
-  imports = [
-    #./hyprland.nix
-    ./theme.nix
-    ./niri.nix
-    ./zed.nix
-  ];
-  home = {
-    username = "kzdkm";
-    homeDirectory = "/home/kzdkm";
-    stateVersion = "24.11"; # Please read the comment before changing.
-    file."Pictures/Wallpapers/default.jpg".source = ./wallpaper.jpg;
-
-  };
-
-  xdg.configFile."openxr/1/active_runtime.json".source =
-    "${pkgs.monado}/share/openxr/1/openxr_monado.json";
-  xdg.configFile."openvr/openvrpaths.vrpath".text = ''
-    {
-      "config" :
-      [
-        "${config.xdg.dataHome}/Steam/config"
-      ],
-      "external_drivers" : null,
-      "jsonid" : "vrpathreg",
-      "log" :
-      [
-        "${config.xdg.dataHome}/Steam/logs"
-      ],
-      "runtime" :
-      [
-        "${pkgs.opencomposite}/lib/opencomposite"
-      ],
-      "version" : 1
-    }
-  '';
   services.swayidle =
     let
       lock = "${inputs.noctalia.packages.${system}.default}/bin/noctalia-shell ipc call lockScreen lock";

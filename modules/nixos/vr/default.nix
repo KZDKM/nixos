@@ -3,7 +3,6 @@
   config,
   pkgs,
   lib,
-  pkgs-old,
   system,
   ...
 }:
@@ -13,11 +12,11 @@
   #boot.kernelPatches = [
   #  {
   #    name = "bsb";
-  #    patch = ./bsb.patch;
+  #    patch = ./patches/bsb.patch;
   #  }
   #  {
   #    name = "bsb-dsc";
-  #    patch = ./bsb-dsc.patch;
+  #    patch = ./patches/bsb-dsc.patch;
   #  }
   #  {
   #    name = "amdgpu-ignore-ctx-privileges";

@@ -2,7 +2,6 @@
   inputs,
   config,
   pkgs,
-  pkgs-old,
   system,
   ...
 }:
@@ -10,7 +9,7 @@ let
   python = pkgs.python313.override {
     self = python;
     packageOverrides = pyfinal: pyprev: {
-      triton-library = pyfinal.callPackage ./packages/triton.nix { };
+      triton-library = pyfinal.callPackage ../../pkgs/triton.nix { };
     };
   };
 

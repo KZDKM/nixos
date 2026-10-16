@@ -3,7 +3,6 @@
   config,
   pkgs,
   lib,
-  pkgs-old,
   system,
   ...
 }:
@@ -31,6 +30,16 @@
     capSysNice = true;
   };
   environment.systemPackages = [
+    (pkgs.prismlauncher.override {
+      jdks = [
+        pkgs.jdk11
+        pkgs.jdk21
+        pkgs.jdk25
+      ];
+    })
+    #pkgs.lutris
+    pkgs.protonplus
+    pkgs.gamescope
     pkgs.adwsteamgtk
     pkgs.steamcmd
     pkgs.boxflat

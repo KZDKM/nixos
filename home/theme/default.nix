@@ -24,10 +24,11 @@ in
   home = {
     packages = [
       pkgs.bibata-cursors
-      # moved to configuration.nix
+      # moved to modules/nixos/desktop/theming.nix
       #pkgs.morewaita-icon-theme
     ];
     file = {
+      "Pictures/Wallpapers/default.jpg".source = ./wallpaper.jpg;
       # Clone icon theme
       ".local/share/icons/MoreWaita".source = pkgs.fetchFromGitHub {
         owner = "somepaulo";
@@ -44,8 +45,8 @@ in
         PerScreenDPI=True
         EnableFractionalScale=True
       '';
-      ".config/gtk-3.0/gtk.css".source = ./themes/gtk-3.0/gtk.css;
-      ".config/gtk-4.0/gtk.css".source = ./themes/gtk-4.0/gtk.css;
+      ".config/gtk-3.0/gtk.css".source = ./gtk-3.0/gtk.css;
+      ".config/gtk-4.0/gtk.css".source = ./gtk-4.0/gtk.css;
     };
   };
   programs.noctalia = {
