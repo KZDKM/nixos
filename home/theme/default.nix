@@ -6,7 +6,7 @@
   ...
 }:
 let
-  target = "${config.xdg.configHome}/noctalia/settings.json";
+  target = "${config.xdg.stateHome}/noctalia/settings.toml";
 in
 {
   imports = [
@@ -99,13 +99,13 @@ in
   };
   home.activation = {
     installConfigIfMissing = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      if [ ! -e "${target}" ]; then
-        echo "Bootstrapping ${target} from repo default"
+      if [ ! -e "${config.xdg.stateHome}/noctalia/settings.toml" ]; then
+        echo "Bootstrapping "${config.xdg.stateHome}/noctalia/settings.toml" from repo default"
         ${pkgs.coreutils}/bin/install -D -m 0644 -v \
-          "${./noctalia-settings.json}" \
-          "${target}"
+          "${./noctalia/settings.toml}" \
+          ""${config.xdg.stateHome}/noctalia/settings.toml""
       else
-        echo "${target} already exists — skipping bootstrap"
+        echo ""${config.xdg.stateHome}/noctalia/settings.toml" already exists — skipping bootstrap"
       fi
     '';
   };

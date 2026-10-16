@@ -1,0 +1,373 @@
+config_version = 14
+
+[audio]
+sound_volume = 0.99999997764825821
+
+[backdrop]
+blur_intensity = 0.89999997988343239
+enabled = true
+tint_intensity = 0.69999998435378075
+
+[bar.default]
+center = []
+enabled = false
+end = [
+    "tray",
+    "temp",
+    "ram",
+    "network",
+    "bluetooth",
+    "volume",
+    "battery",
+    "spacer_2",
+    "widget",
+    "clock",
+    "spacer_3",
+    "control-center",
+    "notifications",
+    "session"
+]
+margin_ends = 0
+padding = 20
+radius_top_left = 0
+radius_top_right = 0
+start = [ "workspaces", "active_window" ]
+thickness = 43
+
+    [bar.default.monitor.eDP-1]
+    enabled = true
+
+[brightness]
+enable_ddcutil = true
+
+[calendar]
+enabled = true
+
+    [calendar.account.canvas]
+    name = "Canvas"
+    path = "/home/kzdkm/.local/share/calendars"
+    type = "vdir"
+
+    [calendar.account.subscription1]
+    server_url = "https://outlook.office365.com/owa/calendar/fffbc507c69142dbad0a325873476264@wisc.edu/345a28eda13d45a0a5a432d45ac96c3313454938372231807502/calendar.ics"
+    type = "ics"
+
+[control_center]
+sidebar = "full"
+
+[desktop_widgets]
+schema_version = 2
+widget_order = [ "desktop-widget-0000000000000001", "desktop-widget-0000000000000002", "desktop-widget-0000000000000003" ]
+
+    [desktop_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [desktop_widgets.widget.desktop-widget-0000000000000001]
+    box_height = 0.0
+    box_width = 0.0
+    cx = 159.80050659179688
+    cy = 1209.217041015625
+    output = "eDP-1"
+    placement_height = 1317.0
+    placement_width = 2027.0
+    rotation = 0.0
+    type = "sysmon"
+
+        [desktop_widgets.widget.desktop-widget-0000000000000001.settings]
+        stat = "cpu_usage"
+        stat2 = "cpu_temp"
+
+    [desktop_widgets.widget.desktop-widget-0000000000000002]
+    box_height = 0.0
+    box_width = 0.0
+    cx = 1644.1226806640625
+    cy = 1056.388427734375
+    output = "eDP-1"
+    placement_height = 1317.0
+    placement_width = 2027.0
+    rotation = 0.0
+    type = "calendar"
+
+    [desktop_widgets.widget.desktop-widget-0000000000000003]
+    box_height = 96.0
+    box_width = 176.0
+    cx = 146.93072509765625
+    cy = 126.55214691162109
+    output = "eDP-1"
+    placement_height = 1317.0
+    placement_width = 2027.0
+    rotation = 0.0
+    type = "weather"
+
+[dock]
+background_opacity = 0.69999998435378075
+border_width = 1.0
+enabled = true
+launcher_position = "start"
+monitors = [ "eDP-1" ]
+pinned = [
+    "org.gnome.Nautilus",
+    "zen-browser",
+    "helium",
+    "dev.zed.Zed-Preview",
+    "com.microsoft.VSCodeInsiders",
+    "com.raggesilver.BlackBox",
+    "gearlever_obsidian_7947f7",
+    "org.gnome.gitlab.somas.Apostrophe",
+    "net.trowell.typesetter",
+    "claude-desktop-unofficial",
+    "io.github.giantpinkrobots.varia"
+]
+position = "left"
+reserve_space = false
+show_dots = true
+smart_auto_hide = true
+
+[idle]
+behavior_order = [ "lock", "screen-off", "lock-and-suspend" ]
+pre_action_fade_seconds = 10
+
+    [idle.behavior.lock]
+    action = "lock"
+    enabled = true
+    timeout = 600.0
+
+    [idle.behavior.lock-and-suspend]
+    action = "lock_and_suspend"
+    enabled = true
+    timeout = 900.0
+
+    [idle.behavior.screen-off]
+    action = "screen_off"
+    enabled = true
+    timeout = 660.0
+
+[location]
+auto_locate = true
+
+[lockscreen]
+tint_intensity = 0.0
+transition = [ "zoom" ]
+transition_duration = 200
+
+[lockscreen_widgets]
+enabled = false
+schema_version = 2
+widget_order = [
+    "lockscreen-login-box@DP-2",
+    "lockscreen-login-box@DP-1",
+    "lockscreen-login-box@HDMI-A-1",
+    "lockscreen-login-box@eDP-1"
+]
+
+    [lockscreen_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1280.0
+    cy = 1258.0
+    output = "DP-1"
+    placement_height = 1440.0
+    placement_width = 2560.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@DP-2"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1280.0
+    cy = 1258.0
+    output = "DP-2"
+    placement_height = 1440.0
+    placement_width = 2560.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@DP-2".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1280.0
+    cy = 1197.33349609375
+    output = "HDMI-A-1"
+    placement_height = 1440.0
+    placement_width = 2560.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@HDMI-A-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1013.5000610351562
+    cy = 1114.0418701171875
+    output = "eDP-1"
+    placement_height = 1317.0
+    placement_width = 2027.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@eDP-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+[nightlight]
+enabled = true
+temperature_night = 3500
+
+[plugin_settings."thepunkoff/pomodoro"]
+enable-work-timer-sound = true
+use-bundled-alarm-sound = true
+
+[plugins]
+enabled = [ "thepunkoff/pomodoro" ]
+
+[shell]
+font_family = "Inter Display Medium"
+launch_apps_as_systemd_services = true
+panel_anchor_bar = "default"
+polkit_agent = true
+
+    [shell.panel]
+    control_center_placement = "floating"
+    control_center_position = "top_right"
+    open_near_click_control_center = true
+    session_placement = "floating"
+    session_position = "center"
+    transparency_mode = "soft"
+
+[system.monitor]
+cpu_poll_seconds = 5
+memory_poll_seconds = 5
+network_poll_seconds = 5
+ram_pct_activity_threshold = 75
+
+[theme]
+builtin = "Ayu"
+community_palette = "Doomed"
+mode = "dark"
+pure_black_dark = true
+source = "wallpaper"
+wallpaper_scheme = "m3-monochrome"
+
+    [theme.templates]
+    builtin_ids = [ "qt" ]
+
+[wallpaper.default]
+path = "/home/kzdkm/Pictures/Wallpapers/default.jpg"
+
+[wallpaper.last]
+path = "/home/kzdkm/Pictures/Wallpapers/default.jpg"
+
+[wallpaper.monitors.eDP-1]
+path = "/home/kzdkm/Pictures/Wallpapers/default.jpg"
+
+[widget.active_window]
+icon_size = 16
+max_length = 420
+title_scroll = "on_hover"
+
+[widget.clock]
+capsule = true
+font_family = "Fira Mono"
+format = "{:%Y-%m-%d %A %H:%M}"
+
+[widget.network]
+show_label = false
+
+[widget.ram]
+stat = "ram_pct"
+
+[widget.spacer_2]
+length = 10
+type = "spacer"
+
+[widget.spacer_3]
+length = 6
+type = "spacer"
+
+[widget.taskbar]
+show_window_title = true
+taskbar_max_width = 500
+
+[widget.temp]
+stat = "cpu_usage"
+
+[widget.tray]
+hidden = [ "nm-applet", "blueman" ]
+
+[widget.volume]
+show_label = false
+
+[widget.widget]
+font_family = "Fira Mono"
+type = "thepunkoff/pomodoro:widget"
+widget-glyph-work = "clock-exclamation"
+
+[widget.workspaces]
+pill_scale = 0.70000000000000007
+show_labels = false

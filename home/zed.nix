@@ -14,6 +14,17 @@
       "fleet-themes"
     ];
     userSettings = {
+      telemetry = {
+        diagnostics = false;
+        metrics = false;
+        anthropic_retention = false;
+      };
+      project_panel = {
+        dock = "left";
+      };
+      cursor_animation = {
+        enabled = true;
+      };
       theme = {
         mode = "system";
         dark = "Fleet Dark";
