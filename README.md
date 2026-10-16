@@ -14,7 +14,20 @@
   - All GNOME default packages
   - VSCodium and Zed
   - Zen Browser
-  - Spicetify (spotify
   - Vesktop (discord
   - more
-- Hyprland config with home-manager
+- niri + noctalia config with home-manager
+- GPU passthrough VM setup with looking-glass
+- VR with monado
+
+## Layout
+
+- `hosts/nixos/` - host specific config, hardware and stateVersion
+- `modules/nixos/` - system modules
+  - `core/` - boot, nix, locale, users, networking, performance
+  - `desktop/` - session, audio, fonts, theming, input method
+  - `virtualisation/` - libvirt, vfio passthrough, looking-glass, samba
+  - `vr/`, `gaming.nix`, `dev.nix`, `browser.nix`, `apps.nix`, `nix-ld.nix`
+- `pkgs/` - local packages
+- `home/` - home-manager config
+- `old/` - retired configs, not imported
