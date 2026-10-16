@@ -25,13 +25,10 @@ in
       vulkan-loader
     ];
   };
-  hardware.logitech.wireless = {
-    enable = true;
-    enableGraphical = true;
-  };
+  hardware.logitech.wireless.enable = true;
+  programs.solaar.enable = true;
 
   environment.systemPackages = [
-    pkgs.solaar
     pkgs.ddcutil
     pkgs.liquidctl
   ];
