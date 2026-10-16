@@ -17,6 +17,7 @@ in
   imports = [
     inputs.nixos-apple-silicon.nixosModules.apple-silicon-support
 
+    ./boot.nix
     ./hardware-configuration.nix
 
     ../../modules/nixos

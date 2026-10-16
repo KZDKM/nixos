@@ -6,6 +6,10 @@
   ...
 }:
 {
+
+  imports = [
+    inputs.claude-desktop-nix-flake.nixosModules.default
+  ];
   # List packages installed in system profile. To search, run:
   environment.systemPackages = [
     # essentials
@@ -100,6 +104,8 @@
     enable = true;
     package = pkgs.javaPackages.compiler.temurin-bin.jre-11;
   };
+
+  programs.claude-desktop.enable = true;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

@@ -39,21 +39,21 @@
         "type": "github"
       }
     },
-    "claude-desktop-nix": {
+    "claude-desktop-nix-flake": {
       "inputs": {
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1790636166,
-        "narHash": "sha256-hTOSqaTx/8PIWRxQ/lPE0+hIIXvebSZW1BuR8eTg6cw=",
-        "owner": "tomsch",
-        "repo": "claude-desktop-nix",
-        "rev": "e4642c646667424962b05ee2b9da7e29a2c33a1c",
+        "lastModified": 1790632875,
+        "narHash": "sha256-ovY0ssXI4mfcLMa/bS5azndpke3qa0QOOxJgmj7sAXw=",
+        "owner": "poeck",
+        "repo": "claude-desktop-nix-flake",
+        "rev": "55ba585546fe222bf18f391a98c1ee60f79684d2",
         "type": "github"
       },
       "original": {
-        "owner": "tomsch",
-        "repo": "claude-desktop-nix",
+        "owner": "poeck",
+        "repo": "claude-desktop-nix-flake",
         "type": "github"
       }
     },
@@ -293,11 +293,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1784120854,
-        "narHash": "sha256-KesHgItiZPgGX740axSiQLcIQ8D24MDqNpkKYWIek8k=",
+        "lastModified": 1782723713,
+        "narHash": "sha256-oPXCU/SSUokcGaJREHibG1CBX3+s/W7orDWQOZDsEeQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "753cc8a3a87467296ddd1fa93f0cc3e81120ee46",
+        "rev": "b5aa0fbd538984f6e3d201be0005b4463d8b09f8",
         "type": "github"
       },
       "original": {
@@ -479,7 +479,7 @@
     "root": {
       "inputs": {
         "barely-metal": "barely-metal",
-        "claude-desktop-nix": "claude-desktop-nix",
+        "claude-desktop-nix-flake": "claude-desktop-nix-flake",
         "home-manager": "home-manager",
         "nix-alien": "nix-alien",
         "nix-cachyos-kernel": "nix-cachyos-kernel",

@@ -5,6 +5,7 @@
     inputs.noctalia.nixosModules.default
 
     ./core/nix.nix
+    ./core/auth.nix
     ./core/locale.nix
     ./core/users.nix
     ./core/networking.nix

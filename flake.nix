@@ -58,7 +58,7 @@
 
     nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
 
-    claude-desktop-nix.url = "github:tomsch/claude-desktop-nix";
+    claude-desktop-nix-flake.url = "github:poeck/claude-desktop-nix-flake";
   };
 
   outputs =
