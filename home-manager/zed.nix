@@ -11,12 +11,13 @@
     extensions = [
       "github-theme"
       "github-dark-default"
+      "fleet-themes"
     ];
     userSettings = {
       theme = {
         mode = "system";
-        dark = "GitHub Dark Default";
-        light = "GitHub Light";
+        dark = "Fleet Dark";
+        light = "Fleet Light";
       };
       vim_mode = true;
       base_keymap = "VSCode";

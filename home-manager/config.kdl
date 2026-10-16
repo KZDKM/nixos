@@ -4,7 +4,7 @@ gestures {
     }
 }
 
-spawn-sh-at-startup "noctalia-shell"
+spawn-sh-at-startup "noctalia"
 //spawn-at-startup "vicinae" "server"
 spawn-at-startup "wayland-pipewire-idle-inhibit"
 spawn-at-startup "kdeconnectd"
@@ -21,7 +21,7 @@ output "Invalid Vendor Codename - RTK RTK QHD HDR 0x01010101" {
 	transform "270"
 	position x=-900 y=-220
 	mode "2560x1600@99.999"
-	scale 1.6
+	scale 1.4
 	layout {
 		default-column-width { proportion 1.0; }
 	}
@@ -168,7 +168,7 @@ window-rule {
 	match title="Ready Or Not"
 	match title="memflow mirror"
 	variable-refresh-rate true
-	allow-tearing true
+	//allow-tearing true
 }
 
 // Example: enable rounded corners for all windows.
@@ -185,9 +185,17 @@ window-rule {
 	open-focused false
 }
 
+// xray
+layer-rule {
+  match namespace="^*"
+  background-effect {
+    xray false
+  }
+}
+
 // overview wallpaper
 layer-rule {
-  match namespace="^noctalia-overview*"
+  match namespace="^noctalia-backdrop*"
   place-within-backdrop true
 }
 
@@ -200,7 +208,7 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+T { spawn "blackbox"; }
-    Mod+Space { spawn "noctalia-shell" "ipc" "call" "launcher" "toggle"; }
+    Mod+Space { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
     //Mod+Space { spawn "vicinae" "toggle"; }
     Mod+L { spawn "hyprlock"; }
     Mod+E { spawn "nautilus" "-w"; }
@@ -327,7 +335,7 @@ binds {
 
 overview {
     backdrop-color "#000"
-    zoom 0.4
+    zoom 0.6
 }
 
 hotkey-overlay {

@@ -34,7 +34,9 @@
       };
       timeout = 3;
     };
-    kernelPackages = pkgs.linuxPackagesFor pkgs.linuxKernel_ccache;
+    #kernelPackages = pkgs.linuxPackagesFor pkgs.linuxKernel_ccache;
+    #kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest;
+    kernelPackages = pkgs.linuxPackages_zen;
     consoleLogLevel = 3;
     initrd = {
       verbose = false;
@@ -282,7 +284,7 @@
     pkgs.ags
     pkgs.networkmanagerapplet
     #inputs.ags.packages."${system}".default
-    pkgs.noctalia-shell
+    #inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
     pkgs.hypridle
     pkgs.hyprsunset
     pkgs.sway-audio-idle-inhibit
@@ -300,7 +302,7 @@
     pkgs.vscodium
     pkgs.obsidian
     pkgs.libreoffice
-    pkgs.apostrophe
+    #pkgs.apostrophe
     pkgs.inkscape
     pkgs.ungoogled-chromium
     pkgs.kdePackages.kdenlive
@@ -317,11 +319,14 @@
     })
     #pkgs.lutris
     pkgs.wechat
-    pkgs.tor-browser
+    #pkgs.tor-browser
     pkgs.telegram-desktop
     pkgs.ayugram-desktop
     pkgs.pomodoro-gtk
     pkgs.lmstudio
+    pkgs.lmstudio-bionic
+    inputs.claude-desktop-nix.packages.x86_64-linux.default
+    pkgs.jan
     pkgs.qbittorrent
 
     # utilities
@@ -349,53 +354,61 @@
     pkgs.liquidctl
     pkgs.gamescope
   ];
+  programs.noctalia = {
+    enable = true;
+    # Enables NetworkManager, Bluetooth, UPower, and a power profile service.
+    recommendedServices.enable = true;
+  };
 
   # for kernel builds
-  programs.ccache.enable = true;
-  programs.ccache.packageNames = [ "linuxPackages_zen.kernel" ];
+  #programs.ccache.enable = true;
+  #programs.ccache.packageNames = [ "linuxPackages_zen.kernel" ];
   nixpkgs.overlays = [
-    (self: super: {
-      ccacheWrapper = super.ccacheWrapper.override {
-        extraConfig = ''
-          export CCACHE_DEBUG=1
-          export KBUILD_BUILD_TIMESTAMP=""
-          export CCACHE_DIR="${config.programs.ccache.cacheDir}"
-          export CCACHE_UMASK=007
-          export CCACHE_SLOPPINESS="random_seed"
-          if [ ! -d "$CCACHE_DIR" ]; then
-            echo "====="
-            echo "Directory '$CCACHE_DIR' does not exist"
-            echo "Please create it with:"
-            echo "  sudo mkdir -m0770 '$CCACHE_DIR'"
-            echo "  sudo chown root:nixbld '$CCACHE_DIR'"
-            echo "====="
-            exit 1
-          fi
-          if [ ! -w "$CCACHE_DIR" ]; then
-            echo "====="
-            echo "Directory '$CCACHE_DIR' is not accessible for user $(whoami)"
-            echo "Please verify its access permissions"
-            echo "====="
-            exit 1
-          fi
-        '';
-      };
-    })
-    inputs.nix-cachyos-kernel.overlays.default
-    (self: super: {
-      linuxKernel_ccache =
-        pkgs.cachyosKernels.linux-cachyos-rc-lto.override
-          {
-            stdenv = pkgs.ccacheStdenv;
-            buildPackages = super.buildPackages // {
-              stdenv = pkgs.ccacheStdenv;
-            };
-            cpuSched = "bore";
-            processorOpt = "zen4";
-            tickrate = "full";
-          };
-    })
+    inputs.nix-cachyos-kernel.overlays.pinned
+    #(self: super: {
+    #  ccacheWrapper = super.ccacheWrapper.override {
+    #    extraConfig = ''
+    #      export CCACHE_DEBUG=1
+    #      export KBUILD_BUILD_TIMESTAMP=""
+    #      export CCACHE_DIR="${config.programs.ccache.cacheDir}"
+    #      export CCACHE_UMASK=007
+    #      export CCACHE_SLOPPINESS="random_seed"
+    #      if [ ! -d "$CCACHE_DIR" ]; then
+    #        echo "====="
+    #        echo "Directory '$CCACHE_DIR' does not exist"
+    #        echo "Please create it with:"
+    #        echo "  sudo mkdir -m0770 '$CCACHE_DIR'"
+    #        echo "  sudo chown root:nixbld '$CCACHE_DIR'"
+    #        echo "====="
+    #        exit 1
+    #      fi
+    #      if [ ! -w "$CCACHE_DIR" ]; then
+    #        echo "====="
+    #        echo "Directory '$CCACHE_DIR' is not accessible for user $(whoami)"
+    #        echo "Please verify its access permissions"
+    #        echo "====="
+    #        exit 1
+    #      fi
+    #    '';
+    #  };
+    #})
+    #(self: super: {
+    #  linuxKernel_ccache =
+    #    pkgs.cachyosKernels.linux-cachyos-rc-lto.override
+    #      {
+    #        stdenv = pkgs.ccacheStdenv;
+    #        buildPackages = super.buildPackages // {
+    #          stdenv = pkgs.ccacheStdenv;
+    #        };
+    #        cpuSched = "bore";
+    #        processorOpt = "zen4";
+    #        tickrate = "full";
+    #      };
+    ##})
   ];
+
+  #nix.settings.extra-sandbox-paths = [ config.programs.ccache.cacheDir ];
+
   swapDevices = [
     {
       device = "/var/lib/swapfile";
@@ -408,7 +421,6 @@
     algorithm = "zstd";
     memoryPercent = 25;  # 8G
   };
-  nix.settings.extra-sandbox-paths = [ config.programs.ccache.cacheDir ];
 
   boot.kernel.sysctl = {
     "kernel.pid_max" = 4194304;

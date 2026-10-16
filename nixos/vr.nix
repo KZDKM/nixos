@@ -2,26 +2,32 @@
   inputs,
   config,
   pkgs,
+  lib,
   pkgs-old,
   system,
   ...
 }:
 {
 
-  boot.kernelPatches = [
-    #{
-      #name = "bsb";
-      #patch = ./bsb.patch;
-    #}
-    {
-      name = "amdgpu-ignore-ctx-privileges";
-      patch = pkgs.fetchpatch {
-        name = "cap_sys_nice_begone.patch";
-        url = "https://github.com/Frogging-Family/community-patches/raw/master/linux61-tkg/cap_sys_nice_begone.mypatch";
-        hash = "sha256-Y3a0+x2xvHsfLax/uwycdJf3xLxvVfkfDVqjkxNaYEo=";
-      };
-    }
-  ];
+
+  #boot.kernelPatches = [
+  #  {
+  #    name = "bsb";
+  #    patch = ./bsb.patch;
+  #  }
+  #  {
+  #    name = "bsb-dsc";
+  #    patch = ./bsb-dsc.patch;
+  #  }
+  #  {
+  #    name = "amdgpu-ignore-ctx-privileges";
+  #    patch = pkgs.fetchpatch {
+  #      name = "cap_sys_nice_begone.patch";
+  #      url = "https://github.com/Frogging-Family/community-patches/raw/master/linux61-tkg/cap_sys_nice_begone.mypatch";
+  #      hash = "sha256-Y3a0+x2xvHsfLax/uwycdJf3xLxvVfkfDVqjkxNaYEo=";
+  #    };
+  #  }
+  #];
   services.lact.enable = true;
   services.monado = {
     enable = true;
@@ -34,7 +40,6 @@
   systemd.user.services.monado.environment = {
     STEAMVR_LH_ENABLE = "1";
     XRT_COMPOSITOR_COMPUTE = "1";
-    IPC_EXIT_WHEN_IDLE = "1";
     U_PACING_APP_USE_MIN_FRAME_PERIOD = "1";
     #XRT_DEBUG_GUI = "1";
     XRT_COMPOSITOR_SCALE_PERCENTAGE = "140";

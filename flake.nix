@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     nixpkgs-zen619.url = "github:NixOS/nixpkgs/1c9104f5510d214bd947a46f36f78bd2a0f2eb05";
-    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/65f066926ccf86ac7c6e872fd0851bd78e08a9b0";
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -36,7 +36,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     noctalia = {
-      url = "github:noctalia-dev/noctalia-shell";
+      url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-alien.url = "github:thiagokokada/nix-alien";
@@ -44,9 +44,11 @@
       url = "github:KZDKM/BarelyMetal";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # Recommended: nixos-facter for hardware auto-detection
     nixos-facter-modules.url = "github:numtide/nixos-facter-modules";
+
+    nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
+
+    claude-desktop-nix.url = "github:tomsch/claude-desktop-nix";
   };
 
   outputs =
@@ -57,6 +59,7 @@
       lanzaboote,
       barely-metal,
       nixos-facter-modules,
+      nixpkgs-xr,
       niri,
       ...
     }@inputs:
@@ -77,6 +80,8 @@
           lanzaboote.nixosModules.lanzaboote
           barely-metal.nixosModules.default
           nixos-facter-modules.nixosModules.facter
+          nixpkgs-xr.nixosModules.nixpkgs-xr
+          inputs.noctalia.nixosModules.default
           ./nixos/configuration.nix
         ];
       };
@@ -85,7 +90,13 @@
         "kzdkm@nixos" = home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.${system};
           extraSpecialArgs = { inherit inputs outputs system; };
-          modules = [ ./home-manager/home.nix ];
+          modules = [
+            {
+              nixpkgs.overlays = [ nixpkgs-xr.overlays.default ];
+
+            }
+            ./home-manager/home.nix
+          ];
         };
       };
     };

@@ -21,7 +21,7 @@ in
     enable = true;
   };
   environment.systemPackages = [
-    (pkgs.wrapFirefox (inputs.zen-browser.packages."${system}".zen-browser-unwrapped.override {
+    (pkgs.wrapFirefox ((inputs.zen-browser.packages."${system}".zen-browser-unwrapped.override {
       policies = {
         DisableTelemetry = true;
         DontCheckDefaultBrowser = true;
@@ -32,7 +32,11 @@ in
           };
         };
       };
-    }) { })
+    }).overrideAttrs (old: {
+          passthru = (old.passthru or { }) // {
+            withFFmpeg = true;
+          };
+        })) { })
   ];
   # Set default browser
   xdg.mime = {

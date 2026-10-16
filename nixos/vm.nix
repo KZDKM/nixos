@@ -164,10 +164,10 @@ in
   ];
 
   boot.kernelPatches = [
-    {
-      name = "kvm";
-      patch = ./kvm.patch;
-    }
+    #{
+    #  name = "kvm";
+    #  patch = ./kvm.patch;
+    #}
   ];
   nixpkgs.overlays = [
     (final: prev: {
@@ -266,8 +266,8 @@ in
       source = "${pkgs.looking-glass-client}/bin/looking-glass-client";
     };
   };
-  boot.extraModulePackages = [ memflow-kmod ];
-  boot.kernelModules = [ "memflow" ];
+  #boot.extraModulePackages = [ memflow-kmod ];
+  #boot.kernelModules = [ "memflow" ];
   services.udev.extraRules = ''
     SUBSYSTEM=="kvmfr", GROUP="kvm", MODE="0660", TAG+="uaccess"
     KERNEL=="event*", SUBSYSTEM=="input", GROUP="input", MODE="0660"
@@ -283,7 +283,7 @@ in
         #package = pkgs.qemu_kvm;
         swtpm = {
           enable = true;
-          package = pkgs.patchedSwtpm;
+          #package = pkgs.patchedSwtpm;
         };
         vhostUserPackages = [ pkgs.virtiofsd ];
         verbatimConfig = ''
@@ -306,7 +306,7 @@ in
   facter.reportPath = ./facter.json;
   barelyMetal = {
     cpu = "amd";
-    enable = true;
+    enable = false;
     probeData = builtins.fromJSON (builtins.readFile ./probe.json);
     spoofing = {
       bootLogo = ./boot-logo.bmp;
