@@ -34,6 +34,13 @@
   - `niri/config.kdl` includes `host.kdl`, from `niri/hosts/<host>.kdl`
 - `old/` - retired configs, not imported
 
+## Notes
+- Kernels are pinned, to updated kernel
+  - Asahi:
+    - Update 'rev', 'hash' in 'hosts/macbook/aurora', then 'nixpkgs update nixpkgs-asahi-kernel'
+  - Desktop:
+    - TBD
+
 ```
 sudo nixos-rebuild switch --flake .#nixos
 sudo nixos-rebuild switch --flake .#macbook --impure
