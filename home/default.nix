@@ -12,6 +12,7 @@
     ./theme
     ./niri
     ./zed.nix
+    ./zen.nix
     ./idle.nix
   ];
   home = {

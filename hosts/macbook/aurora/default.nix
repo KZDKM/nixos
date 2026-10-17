@@ -18,7 +18,7 @@
 let
   rebase = false;
 
-  # the kernel only follows the pinned nixpkgs-kernel input, see flake.nix
+  # the kernel only follows the pinned nixpkgs-asahi-kernel input, see flake.nix
   pkgsKernel = import inputs.nixpkgs-asahi-kernel { inherit (pkgs.stdenv.hostPlatform) system; };
 
   release = {

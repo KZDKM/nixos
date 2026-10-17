@@ -31,7 +31,7 @@ in
     }
   ];
 
-  nixpkgs.overlays = [ (import ../../overlays/dev) ];
+  nixpkgs.overlays = [ (import ../../overlays/dev inputs) ];
 
   hardware.asahi.enable = true;
   hardware.asahi.extractPeripheralFirmware = onMacbook;

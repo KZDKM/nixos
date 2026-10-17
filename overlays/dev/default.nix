@@ -1,8 +1,9 @@
-# Local patches from ~/Patches/dev-niri and ~/Patches/dev-zed. To refresh them:
+# Local patches from ~/Patches/dev-niri and ~/Patches/dev-zed, takes the flake
+# inputs. To refresh them:
 #   niri-ctm-gamma.patch:         git -C ~/Patches/dev-niri format-patch -1 --stdout work
 #   niri-fullscreen-notch.patch:  git -C ~/Patches/dev-niri diff HEAD
 #   zed-uclamp-boost.patch:       git -C ~/Patches/dev-zed diff HEAD
-final: prev: {
+inputs: final: prev: {
   # The niri patches are against main, they don't apply to the 26.04 release
   niri = prev.niri.overrideAttrs (old: {
     version = "26.04-unstable-2026-09-22";
@@ -25,9 +26,11 @@ final: prev: {
     doInstallCheck = false;
   });
 
-  # on hold, low priority (and a long build). Also set programs.zed-editor.package
-  # in home/hosts/macbook.nix when enabling, home-manager doesn't get this overlay.
-  # zed-editor = prev.zed-editor.overrideAttrs (old: {
-  #   patches = (old.patches or [ ]) ++ [ ./zed-uclamp-boost.patch ];
-  # });
+  # Built from the pinned nixpkgs-zed input (see flake.nix), so updating nixpkgs
+  # doesn't rebuild it. home/hosts/macbook.nix uses this for home-manager too.
+  zed-editor =
+    (import inputs.nixpkgs-zed { inherit (final.stdenv.hostPlatform) system; }).zed-editor.overrideAttrs
+      (old: {
+        patches = (old.patches or [ ]) ++ [ ./zed-uclamp-boost.patch ];
+      });
 }

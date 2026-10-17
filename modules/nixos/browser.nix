@@ -41,6 +41,7 @@ in
       # touchpad pan gestures and makes scrolling 2x faster than GTK apps.
       extraPrefs = ''
         defaultPref("mousewheel.default.delta_multiplier_y", 100);
+        defaultPref("zen.urlbar.replace-newtab", false);
       '';
     })
   ];
