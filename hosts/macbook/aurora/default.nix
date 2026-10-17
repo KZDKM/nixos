@@ -8,7 +8,11 @@
 #   took an SError on boot, most likely because that config has the Apple
 #   DART/PCIe/TYPEC/DRM drivers as modules where aurora builds them in.
 #
-# m1n1 stays nixpkg
+# m1n1 is aurora's (omacom/m1n1, as pinned by the release): AsahiLinux m1n1
+# plus the SEP warm-registration guard and preboot-UUID forwarding the SEP
+# driver needs. It took an SError with the rebased kernel, not yet tried with
+# the release one. boot.bin is not per generation: keep a known-good copy on
+# the ESP to put back if it doesn't boot.
 {
   inputs,
   lib,
@@ -36,6 +40,14 @@ let
       inherit (release) rev hash;
     };
     configfile = ./config;
+    kernelPatches = [
+      {
+        # built-in panel reports 0x0 mm, so GDM and the cursor stay at 1x
+        # (omacom/linux-aurora#84, drop once it's merged)
+        name = "appledrm-panel-size";
+        patch = ./appledrm-panel-size.patch;
+      }
+    ];
     # what buildLinux would derive from the config, NixOS modules check these
     features = {
       efiBootStub = true;
@@ -46,6 +58,31 @@ let
   };
 in
 lib.mkMerge [
+  {
+    nixpkgs.overlays = [
+      (final: prev: {
+        # m1n1-aurora 1.6.1.aurora17-5, source commit from the release's
+        # mesa-matched-stack.json
+        m1n1 = prev.m1n1.overrideAttrs {
+          version = "1.6.1-aurora17";
+          src = final.fetchFromGitHub {
+            owner = "omacom";
+            repo = "m1n1";
+            rev = "d05ba17dfb771871d608225be42968bbb1e75a18";
+            hash = "sha256-Ed1B/SyqCeq+1YPECS0J80tJickA/mgBJ1S0yGxx4aA=";
+          };
+          # cargoDeps follows src, its Cargo.lock is the same as 2.0.0's
+        };
+      })
+    ];
+
+    # this m1n1 describes its ADT copy and log to Linux as phram regions, the
+    # release keeps phram from binding them at boot
+    boot.blacklistedKernelModules = [ "phram" ];
+
+    # the SEP driver and Touch ID are in ./touchid.nix
+  }
+
   (lib.mkIf (!rebase) {
     boot.kernelPackages = lib.mkForce (pkgsKernel.linuxPackagesFor kernel);
     # NixOS' default initrd modules (ahci, ...) are not in aurora's config, the

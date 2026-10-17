@@ -6,8 +6,9 @@
   ...
 }:
 {
-  # Set your time zone.
-  time.timeZone = "America/Chicago";
+  # Time zone from geoclue's location (beacondb, by IP when there's no
+  # wpa_supplicant wifi scan to use, as with iwd on the macbook)
+  services.automatic-timezoned.enable = true;
 
   # Select internationalisation properties.
   i18n.defaultLocale = "zh_CN.UTF-8";

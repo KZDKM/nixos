@@ -18,6 +18,7 @@ in
     inputs.nixos-apple-silicon.nixosModules.apple-silicon-support
 
     ./aurora
+    ./aurora/touchid.nix
     ./boot.nix
     ./hardware-configuration.nix
 

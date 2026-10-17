@@ -30,4 +30,11 @@ output "eDP-1" {
 	variable-refresh-rate
 
 	notch-height 64
+	position x=0 y=0
+}
+
+output "DP-1" {
+	mode "2560x1440@170.002"
+	position x=-335 y=-1440
+	scale 1
 }
