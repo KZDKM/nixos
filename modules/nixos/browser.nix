@@ -36,7 +36,13 @@ in
           passthru = (old.passthru or { }) // {
             withFFmpeg = true;
           };
-        })) { })
+        })) {
+      # Zen ships delta_multiplier_y = 200 (Firefox: 100), which also scales
+      # touchpad pan gestures and makes scrolling 2x faster than GTK apps.
+      extraPrefs = ''
+        defaultPref("mousewheel.default.delta_multiplier_y", 100);
+      '';
+    })
   ];
   # Set default browser
   xdg.mime = {

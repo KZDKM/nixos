@@ -4,6 +4,9 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # macbook asahi kernel pin
+    nixpkgs-asahi-kernel.url = "github:nixos/nixpkgs/55bfb4d7437bd4e09ab7cba58a43bd68eb310044";
+
     #nixpkgs-zen619.url = "github:NixOS/nixpkgs/1c9104f5510d214bd947a46f36f78bd2a0f2eb05";
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 

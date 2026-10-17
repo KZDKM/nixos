@@ -1,0 +1,356 @@
+diff --git a/crates/gpui_linux/src/linux.rs b/crates/gpui_linux/src/linux.rs
+index 33393f7..934d060 100644
+--- a/crates/gpui_linux/src/linux.rs
++++ b/crates/gpui_linux/src/linux.rs
+@@ -1,3 +1,5 @@
++#[cfg(any(feature = "wayland", feature = "x11"))]
++mod boost;
+ mod dispatcher;
+ mod headless;
+ mod keyboard;
+diff --git a/crates/gpui_linux/src/linux/boost.rs b/crates/gpui_linux/src/linux/boost.rs
+new file mode 100644
+index 0000000..2935cec
+--- /dev/null
++++ b/crates/gpui_linux/src/linux/boost.rs
+@@ -0,0 +1,234 @@
++//! Keeps the main thread on fast cores at a usable clock while the user is interacting.
++//!
++//! GPUI builds every frame on the main thread in short bursts with idle gaps between them.
++//! schedutil sizes the CPU frequency from the thread's average utilization, which those gaps keep
++//! low, and on heterogeneous systems the energy-aware scheduler is free to place such a thread on
++//! a little core. Both push frames past the refresh budget. macOS avoids this by running the main
++//! thread at the user-interactive QoS class; the closest Linux equivalent is a minimum utilization
++//! clamp (`sched_setattr` with `SCHED_FLAG_UTIL_CLAMP_MIN`), which raises the frequency the thread
++//! runs at and, once it exceeds a core's capacity, keeps the thread off that core.
++//!
++//! The clamp is raised on input and while frames are being produced, and dropped once the main
++//! thread has been quiet for [`HOLD`], so non-interactive main-thread work runs unboosted. A clamp
++//! only takes effect while the thread is runnable, so holding it across idle gaps costs nothing.
++//!
++//! `ZED_UCLAMP_MIN` overrides the computed floor (0..=1024, `0` disables).
++
++use std::{
++    cell::{Cell, RefCell},
++    fs,
++    time::{Duration, Instant},
++};
++
++/// How long the main thread must go without input or frames before the floor is dropped. This
++/// bridges the gaps between scroll events and between frames of an animation.
++const HOLD: Duration = Duration::from_millis(250);
++
++/// Floor used when the CPUs are all the same size, or their capacities are unknown.
++const UNIFORM_FLOOR: u32 = 512;
++
++const SCHED_CAPACITY_SCALE: u32 = 1024;
++
++thread_local! {
++    static BOOST: Boost = Boost::new();
++}
++
++struct Boost {
++    /// Zero once disabled, by configuration or because the kernel refused the clamp.
++    floor: Cell<u32>,
++    active: Cell<bool>,
++    last_activity: Cell<Instant>,
++    /// Arms a one-shot timer on the platform event loop that calls [`release_timer_fired`].
++    arm_release: RefCell<Option<Box<dyn Fn(Duration)>>>,
++}
++
++impl Boost {
++    fn new() -> Self {
++        let floor = configured_floor();
++        log::debug!("main thread utilization floor: {floor}");
++        Self {
++            floor: Cell::new(floor),
++            active: Cell::new(false),
++            last_activity: Cell::new(Instant::now()),
++            arm_release: RefCell::new(None),
++        }
++    }
++}
++
++/// Enables boosting for the calling thread, which must be the main thread. `arm_release` must
++/// schedule [`release_timer_fired`] on the main thread's event loop after the given delay.
++pub(crate) fn install(arm_release: impl Fn(Duration) + 'static) {
++    BOOST.with(|boost| *boost.arm_release.borrow_mut() = Some(Box::new(arm_release)));
++}
++
++/// Records interactive activity on the main thread, raising the floor if it is not already up.
++pub(crate) fn touch() {
++    BOOST.with(|boost| {
++        let floor = boost.floor.get();
++        if floor == 0 {
++            return;
++        }
++        boost.last_activity.set(Instant::now());
++        if boost.active.get() {
++            return;
++        }
++
++        let arm_release = boost.arm_release.borrow();
++        let Some(arm_release) = arm_release.as_ref() else {
++            return;
++        };
++        if let Err(err) = set_util_min(floor) {
++            log::info!("disabling main thread utilization floor: {err}");
++            boost.floor.set(0);
++            return;
++        }
++        boost.active.set(true);
++        arm_release(HOLD);
++    });
++}
++
++/// Drops the floor if the main thread has been quiet for [`HOLD`]. Otherwise returns the delay
++/// after which the caller should check again.
++pub(crate) fn release_timer_fired() -> Option<Duration> {
++    BOOST.with(|boost| {
++        if !boost.active.get() {
++            return None;
++        }
++        let quiet = boost.last_activity.get().elapsed();
++        if quiet < HOLD {
++            return Some(HOLD - quiet);
++        }
++        set_util_min(0).ok();
++        boost.active.set(false);
++        None
++    })
++}
++
++fn configured_floor() -> u32 {
++    match std::env::var("ZED_UCLAMP_MIN") {
++        Ok(value) => value
++            .trim()
++            .parse::<u32>()
++            .map_or(0, |floor| floor.min(SCHED_CAPACITY_SCALE)),
++        Err(_) => floor_for_capacities(&cpu_capacities()),
++    }
++}
++
++/// On heterogeneous systems, returns a floor just above the largest core that is smaller than
++/// the biggest ones. The scheduler treats a task whose clamp exceeds a core's capacity as not
++/// fitting there, so this keeps the main thread on the big cores without pinning it.
++fn floor_for_capacities(capacities: &[u32]) -> u32 {
++    let Some(&biggest) = capacities.iter().max() else {
++        return UNIFORM_FLOOR;
++    };
++    match capacities.iter().copied().filter(|&c| c < biggest).max() {
++        Some(below) => (below + below / 16 + 1).min(biggest),
++        None => UNIFORM_FLOOR,
++    }
++}
++
++fn cpu_capacities() -> Vec<u32> {
++    let Ok(entries) = fs::read_dir("/sys/devices/system/cpu") else {
++        return Vec::new();
++    };
++    entries
++        .filter_map(Result::ok)
++        .filter(|entry| {
++            entry
++                .file_name()
++                .to_str()
++                .and_then(|name| name.strip_prefix("cpu"))
++                .is_some_and(|id| !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()))
++        })
++        .filter_map(|entry| fs::read_to_string(entry.path().join("cpu_capacity")).ok())
++        .filter_map(|capacity| capacity.trim().parse().ok())
++        .collect()
++}
++
++/// `struct sched_attr` from `include/uapi/linux/sched/types.h` (`SCHED_ATTR_SIZE_VER1`).
++#[cfg(target_os = "linux")]
++#[repr(C)]
++#[derive(Default)]
++struct SchedAttr {
++    size: u32,
++    sched_policy: u32,
++    sched_flags: u64,
++    sched_nice: i32,
++    sched_priority: u32,
++    sched_runtime: u64,
++    sched_deadline: u64,
++    sched_period: u64,
++    sched_util_min: u32,
++    sched_util_max: u32,
++}
++
++#[cfg(target_os = "linux")]
++const SCHED_FLAG_RESET_ON_FORK: u64 = 0x01;
++#[cfg(target_os = "linux")]
++const SCHED_FLAG_KEEP_PARAMS: u64 = 0x10;
++#[cfg(target_os = "linux")]
++const SCHED_FLAG_UTIL_CLAMP_MIN: u64 = 0x20;
++
++#[cfg(not(target_os = "linux"))]
++fn set_util_min(_value: u32) -> std::io::Result<()> {
++    Err(std::io::ErrorKind::Unsupported.into())
++}
++
++/// Sets the calling thread's minimum utilization clamp, leaving its policy and nice value alone.
++#[cfg(target_os = "linux")]
++fn set_util_min(value: u32) -> std::io::Result<()> {
++    let size = std::mem::size_of::<SchedAttr>() as u32;
++    let mut attr = SchedAttr::default();
++    // SAFETY: attr is a writable sched_attr of `size` bytes; pid 0 is the calling thread.
++    let result = unsafe {
++        libc::syscall(
++            libc::SYS_sched_getattr,
++            0,
++            &mut attr as *mut SchedAttr,
++            size,
++            0,
++        )
++    };
++    if result != 0 {
++        return Err(std::io::Error::last_os_error());
++    }
++
++    // The policy is passed back explicitly rather than with SCHED_FLAG_KEEP_POLICY, because the
++    // kernel ignores SCHED_FLAG_RESET_ON_FORK when the policy is kept. Reset-on-fork stops worker
++    // threads and child processes spawned while the floor is up from inheriting it. Once set, an
++    // unprivileged thread cannot clear it again, so it is passed on every call.
++    attr.size = size;
++    attr.sched_flags =
++        SCHED_FLAG_RESET_ON_FORK | SCHED_FLAG_KEEP_PARAMS | SCHED_FLAG_UTIL_CLAMP_MIN;
++    attr.sched_util_min = value;
++    // SAFETY: attr is an initialized sched_attr of `size` bytes; pid 0 is the calling thread.
++    let result = unsafe { libc::syscall(libc::SYS_sched_setattr, 0, &attr as *const SchedAttr, 0) };
++    if result != 0 {
++        return Err(std::io::Error::last_os_error());
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn floor_clears_little_cores() {
++        // Apple M2 Pro: E-cores at 561, P-cores at 1024.
++        let floor = floor_for_capacities(&[561, 561, 561, 561, 1024, 1024, 1024, 1024]);
++        assert!(floor > 561 && floor < 1024);
++    }
++
++    #[test]
++    fn floor_for_uniform_or_unknown() {
++        assert_eq!(floor_for_capacities(&[1024; 8]), UNIFORM_FLOOR);
++        assert_eq!(floor_for_capacities(&[]), UNIFORM_FLOOR);
++    }
++
++    #[test]
++    fn three_tiers_clear_the_middle() {
++        let floor = floor_for_capacities(&[300, 300, 700, 700, 1024]);
++        assert!(floor > 700 && floor < 1024);
++    }
++}
+diff --git a/crates/gpui_linux/src/linux/wayland/client.rs b/crates/gpui_linux/src/linux/wayland/client.rs
+index 469eb44..8e42ead 100644
+--- a/crates/gpui_linux/src/linux/wayland/client.rs
++++ b/crates/gpui_linux/src/linux/wayland/client.rs
+@@ -1061,6 +1061,20 @@ impl WaylandClient {
+             ime_enabled: None,
+         }));
+ 
++        let release_handle = handle.clone();
++        crate::linux::boost::install(move |delay| {
++            if let Err(err) =
++                release_handle.insert_source(Timer::from_duration(delay), |_, _, _| {
++                    match crate::linux::boost::release_timer_fired() {
++                        Some(delay) => TimeoutAction::ToDuration(delay),
++                        None => TimeoutAction::Drop,
++                    }
++                })
++            {
++                log::error!("Failed to schedule main thread boost release: {err}");
++            }
++        });
++
+         WaylandSource::new(conn, event_queue)
+             .insert(handle)
+             .unwrap();
+@@ -1840,6 +1854,7 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for WaylandClientStatePtr {
+         _: &Connection,
+         _: &QueueHandle<Self>,
+     ) {
++        crate::linux::boost::touch();
+         let client = this.get_client();
+         let mut state = client.borrow_mut();
+         match event {
+@@ -2177,6 +2192,7 @@ impl Dispatch<wl_pointer::WlPointer, ()> for WaylandClientStatePtr {
+         _: &Connection,
+         _: &QueueHandle<Self>,
+     ) {
++        crate::linux::boost::touch();
+         let client = this.get_client();
+         let mut state = client.borrow_mut();
+ 
+diff --git a/crates/gpui_linux/src/linux/wayland/window.rs b/crates/gpui_linux/src/linux/wayland/window.rs
+index 3f2671d..1bddc56 100644
+--- a/crates/gpui_linux/src/linux/wayland/window.rs
++++ b/crates/gpui_linux/src/linux/wayland/window.rs
+@@ -922,6 +922,7 @@ impl WaylandWindowStatePtr {
+     }
+ 
+     pub fn frame(&self) {
++        crate::linux::boost::touch();
+         self.frame_loop.set(FrameLoop::Ticking);
+         let mut state = self.state.borrow_mut();
+         state.resize_throttle = false;
+diff --git a/crates/gpui_linux/src/linux/x11/client.rs b/crates/gpui_linux/src/linux/x11/client.rs
+index 23a9a91..a5751bf 100644
+--- a/crates/gpui_linux/src/linux/x11/client.rs
++++ b/crates/gpui_linux/src/linux/x11/client.rs
+@@ -3,6 +3,7 @@ use ashpd::WindowIdentifier;
+ use calloop::{
+     EventLoop, LoopHandle, RegistrationToken,
+     generic::{FdWrapper, Generic},
++    timer::{TimeoutAction, Timer},
+ };
+ use collections::HashMap;
+ use core::str;
+@@ -527,6 +528,20 @@ impl X11Client {
+ 
+         xcb_flush(&xcb_connection);
+ 
++        let release_handle = handle.clone();
++        crate::linux::boost::install(move |delay| {
++            if let Err(err) =
++                release_handle.insert_source(Timer::from_duration(delay), |_, _, _| {
++                    match crate::linux::boost::release_timer_fired() {
++                        Some(delay) => TimeoutAction::ToDuration(delay),
++                        None => TimeoutAction::Drop,
++                    }
++                })
++            {
++                log::error!("Failed to schedule main thread boost release: {err}");
++            }
++        });
++
+         Ok(X11Client(Rc::new(RefCell::new(X11ClientState {
+             modifiers: Modifiers::default(),
+             capslock: Capslock::default(),
+@@ -810,6 +825,19 @@ impl X11Client {
+     }
+ 
+     fn handle_event(&self, event: Event) -> Option<()> {
++        if matches!(
++            event,
++            Event::KeyPress(_)
++                | Event::KeyRelease(_)
++                | Event::XinputButtonPress(_)
++                | Event::XinputButtonRelease(_)
++                | Event::XinputMotion(_)
++                | Event::XinputGesturePinchBegin(_)
++                | Event::XinputGesturePinchUpdate(_)
++                | Event::XinputGesturePinchEnd(_)
++        ) {
++            crate::linux::boost::touch();
++        }
+         match event {
+             Event::UnmapNotify(event) => {
+                 let mut state = self.0.borrow_mut();

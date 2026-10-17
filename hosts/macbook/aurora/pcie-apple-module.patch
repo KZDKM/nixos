@@ -1,0 +1,9 @@
+pcie-apple calls pci_doe_disconnected(), aurora builds it in, here it is a module.
+
+--- a/drivers/pci/doe.c
++++ b/drivers/pci/doe.c
+@@ -891,3 +891,4 @@ void pci_doe_disconnected(struct pci_dev *pdev)
+ 	xa_for_each(&pdev->doe_mbs, index, doe_mb)
+ 		pci_doe_cancel_tasks(doe_mb);
+ }
++EXPORT_SYMBOL_GPL(pci_doe_disconnected);

@@ -5,8 +5,9 @@ input {
 		natural-scroll
 		click-method "clickfinger"
 		dwt
-		accel-speed 0.333
+		accel-speed 0.5
 		accel-profile "flat"
+		scroll-factor 0.333
 	}
 	keyboard {
         xkb {
@@ -15,8 +16,18 @@ input {
 	}
 }
 
+// fix electron scroll
+window-rule {
+    match app-id=r#"^(codium|obsidian|vesktop|chromium-browser|com\.anthropic\.Claude)$"#
+    match app-id=r#"(?i)lm.?studio"#
+    scroll-factor 0.25
+}
+
+
 // built-in display, check the name with `niri msg outputs`
 output "eDP-1" {
 	scale 1.49
 	variable-refresh-rate
+
+	notch-height 64
 }

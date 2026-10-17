@@ -17,6 +17,7 @@ in
   imports = [
     inputs.nixos-apple-silicon.nixosModules.apple-silicon-support
 
+    ./aurora
     ./boot.nix
     ./hardware-configuration.nix
 
@@ -30,13 +31,32 @@ in
     }
   ];
 
+  nixpkgs.overlays = [ (import ../../overlays/dev) ];
+
   hardware.asahi.enable = true;
   hardware.asahi.extractPeripheralFirmware = onMacbook;
   hardware.asahi.peripheralFirmwareDirectory = if onMacbook then /boot/vendorfw else null;
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
+  # the ESP is 476M, ~120M of it is asahi/vendorfw/m1n1, a generation with its
+  # own kernel takes ~70-100M
+  boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = false;
+
+  # 16G of RAM is not enough for parallel kernel/rust builds
+  swapDevices = [
+    {
+      device = "/var/lib/swapfile";
+      size = 16 * 1024;  # size in MiB
+      priority = 10;
+    }
+  ];
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;  # 8G
+  };
 
   networking.hostName = "KZDKMs-MBP-NixOS";
   # wpa_supplicant lacks WPA3 on the broadcom chips

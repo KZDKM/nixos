@@ -14,6 +14,9 @@
       "fleet-themes"
     ];
     userSettings = {
+      theme_overrides = {
+        "background.appearance" = "blurred";
+      };
       telemetry = {
         diagnostics = false;
         metrics = false;

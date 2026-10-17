@@ -40,7 +40,7 @@ layout {
     border {
         // off
         width 1
-        active-color "#333"
+        active-color "#33333300"
         inactive-color "#222"
     }
 
@@ -137,6 +137,15 @@ layer-rule {
   match namespace="^*"
   background-effect {
     xray false
+  }
+}
+
+// blur
+window-rule {
+  match app-id="^*"
+  background-effect {
+    blur true
+    xray true
   }
 }
 

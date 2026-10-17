@@ -1,0 +1,511 @@
+diff --git a/niri-config/src/output.rs b/niri-config/src/output.rs
+index 48572f6e..9b59e003 100644
+--- a/niri-config/src/output.rs
++++ b/niri-config/src/output.rs
+@@ -78,6 +78,10 @@ pub struct Output {
+     pub hot_corners: Option<HotCorners>,
+     #[knuffel(child)]
+     pub layout: Option<LayoutPart>,
++    /// Height, in physical pixels, of a strip at the top of the output that fullscreen
++    /// windows must never draw under (e.g. to dodge a camera notch on a built-in display).
++    #[knuffel(child, unwrap(argument))]
++    pub notch_height: Option<FloatOrInt<0, 65535>>,
+ }
+ 
+ impl Output {
+@@ -111,6 +115,7 @@ impl Default for Output {
+             backdrop_color: None,
+             hot_corners: None,
+             layout: None,
++            notch_height: None,
+         }
+     }
+ }
+diff --git a/src/layout/monitor.rs b/src/layout/monitor.rs
+index 761d226b..fd658ea7 100644
+--- a/src/layout/monitor.rs
++++ b/src/layout/monitor.rs
+@@ -89,6 +89,9 @@ pub struct Monitor<W: LayoutElement> {
+     pub(super) options: Rc<Options>,
+     /// Layout config overrides for this monitor.
+     layout_config: Option<niri_config::LayoutPart>,
++    /// Height, in logical pixels, reserved at the top of the output that fullscreen windows
++    /// must not draw under (e.g. to dodge a camera notch).
++    notch_height: f64,
+ }
+ 
+ #[derive(Debug)]
+@@ -347,6 +350,7 @@ impl<W: LayoutElement> Monitor<W> {
+             base_options,
+             options,
+             layout_config,
++            notch_height: 0.,
+         }
+     }
+ 
+@@ -413,11 +417,12 @@ impl<W: LayoutElement> Monitor<W> {
+     }
+ 
+     pub fn add_workspace_at(&mut self, idx: usize) {
+-        let ws = Workspace::new(
++        let mut ws = Workspace::new(
+             self.output.clone(),
+             self.clock.clone(),
+             self.options.clone(),
+         );
++        ws.set_notch_height(self.notch_height);
+ 
+         self.workspaces.insert(idx, ws);
+         if idx <= self.active_workspace_idx {
+@@ -721,6 +726,7 @@ impl<W: LayoutElement> Monitor<W> {
+     pub fn insert_workspace(&mut self, mut ws: Workspace<W>, mut idx: usize, activate: bool) {
+         ws.set_output(Some(self.output.clone()));
+         ws.update_config(self.options.clone());
++        ws.set_notch_height(self.notch_height);
+ 
+         // Don't insert past the last empty workspace.
+         if idx == self.workspaces.len() {
+@@ -755,6 +761,7 @@ impl<W: LayoutElement> Monitor<W> {
+         for ws in &mut workspaces {
+             ws.set_output(Some(self.output.clone()));
+             ws.update_config(self.options.clone());
++            ws.set_notch_height(self.notch_height);
+         }
+ 
+         let empty_was_focused = self.active_workspace_idx == self.workspaces.len() - 1;
+@@ -1222,6 +1229,20 @@ impl<W: LayoutElement> Monitor<W> {
+         true
+     }
+ 
++    pub fn set_notch_height(&mut self, notch_height: f64) -> bool {
++        self.notch_height = notch_height;
++
++        let mut changed = false;
++        for ws in &mut self.workspaces {
++            changed |= ws.set_notch_height(notch_height);
++        }
++        changed
++    }
++
++    pub fn notch_height(&self) -> f64 {
++        self.notch_height
++    }
++
+     pub fn update_shaders(&mut self) {
+         for ws in &mut self.workspaces {
+             ws.update_shaders();
+diff --git a/src/layout/scrolling.rs b/src/layout/scrolling.rs
+index c7d94c54..3881f386 100644
+--- a/src/layout/scrolling.rs
++++ b/src/layout/scrolling.rs
+@@ -85,6 +85,10 @@ pub struct ScrollingSpace<W: LayoutElement> {
+     /// the layer-shell top layer (which renders on top of popups).
+     parent_area: Rectangle<f64, Logical>,
+ 
++    /// Height, in logical pixels, reserved at the top of the output that fullscreen windows
++    /// must not draw under (e.g. to dodge a camera notch).
++    notch_height: f64,
++
+     /// Scale of the output the space is on (and rounds its sizes to).
+     scale: f64,
+ 
+@@ -229,6 +233,10 @@ pub struct Column<W: LayoutElement> {
+     /// Used for maximize-to-edges.
+     parent_area: Rectangle<f64, Logical>,
+ 
++    /// Height, in logical pixels, reserved at the top of the output that fullscreen windows
++    /// must not draw under (e.g. to dodge a camera notch).
++    notch_height: f64,
++
+     /// Scale of the output the column is on (and rounds its sizes to).
+     scale: f64,
+ 
+@@ -334,12 +342,26 @@ impl<W: LayoutElement> ScrollingSpace<W> {
+             view_size,
+             working_area,
+             parent_area,
++            notch_height: 0.,
+             scale,
+             clock,
+             options,
+         }
+     }
+ 
++    pub fn set_notch_height(&mut self, notch_height: f64) -> bool {
++        if self.notch_height == notch_height {
++            return false;
++        }
++
++        self.notch_height = notch_height;
++        for column in &mut self.columns {
++            column.set_notch_height(notch_height);
++        }
++
++        true
++    }
++
+     pub fn update_config(
+         &mut self,
+         view_size: Size<f64, Logical>,
+@@ -4001,6 +4023,8 @@ impl<W: LayoutElement> Column<W> {
+             .iter()
+             .position(|preset| width == ColumnWidth::from(*preset));
+ 
++        let notch_height = tile.notch_height;
++
+         let mut rv = Self {
+             tiles: vec![],
+             data: vec![],
+@@ -4017,6 +4041,7 @@ impl<W: LayoutElement> Column<W> {
+             view_size,
+             working_area,
+             parent_area,
++            notch_height,
+             scale,
+             clock: tile.clock.clone(),
+             options,
+@@ -5297,6 +5322,18 @@ impl<W: LayoutElement> Column<W> {
+         self.update_tile_sizes(true);
+     }
+ 
++    pub(super) fn set_notch_height(&mut self, notch_height: f64) {
++        if self.notch_height == notch_height {
++            return;
++        }
++
++        self.notch_height = notch_height;
++        for tile in &mut self.tiles {
++            tile.set_notch_height(notch_height);
++        }
++        self.update_tile_sizes(false);
++    }
++
+     fn tiles_origin(&self) -> Point<f64, Logical> {
+         let mut origin = Point::from((0., 0.));
+ 
+@@ -5306,7 +5343,10 @@ impl<W: LayoutElement> Column<W> {
+                 origin.y += self.parent_area.loc.y;
+                 return origin;
+             }
+-            SizingMode::Fullscreen => return origin,
++            SizingMode::Fullscreen => {
++                origin.y += self.notch_height;
++                return origin;
++            }
+         }
+ 
+         origin.y += self.working_area.loc.y + self.options.layout.gaps;
+diff --git a/src/layout/tile.rs b/src/layout/tile.rs
+index db8ce678..d2455015 100644
+--- a/src/layout/tile.rs
++++ b/src/layout/tile.rs
+@@ -110,6 +110,10 @@ pub struct Tile<W: LayoutElement> {
+     /// Used as the fullscreen target size.
+     view_size: Size<f64, Logical>,
+ 
++    /// Height, in logical pixels, reserved at the top of the output that fullscreen windows
++    /// must not draw under (e.g. to dodge a camera notch).
++    pub(super) notch_height: f64,
++
+     /// Scale of the output the tile is on (and rounds its sizes to).
+     scale: f64,
+ 
+@@ -213,12 +217,17 @@ impl<W: LayoutElement> Tile<W> {
+             unmap_snapshot: None,
+             rounded_corner_damage: Default::default(),
+             view_size,
++            notch_height: 0.,
+             scale,
+             clock,
+             options,
+         }
+     }
+ 
++    pub fn set_notch_height(&mut self, notch_height: f64) {
++        self.notch_height = notch_height;
++    }
++
+     pub fn update_config(
+         &mut self,
+         view_size: Size<f64, Logical>,
+@@ -285,7 +294,7 @@ impl<W: LayoutElement> Tile<W> {
+                 let mut tile_size = animate_from.size;
+                 if prev_sizing_mode.is_fullscreen() {
+                     tile_size.w = f64::max(tile_size.w, self.view_size.w);
+-                    tile_size.h = f64::max(tile_size.h, self.view_size.h);
++                    tile_size.h = f64::max(tile_size.h, self.view_size.h - self.notch_height);
+                 } else if prev_sizing_mode.is_normal() && !self.border.is_off() {
+                     let width = self.border.width();
+                     tile_size.w += width * 2.;
+@@ -324,7 +333,7 @@ impl<W: LayoutElement> Tile<W> {
+                 let mut tile_size = size;
+                 if prev_sizing_mode.is_fullscreen() {
+                     tile_size.w = f64::max(tile_size.w, self.view_size.w);
+-                    tile_size.h = f64::max(tile_size.h, self.view_size.h);
++                    tile_size.h = f64::max(tile_size.h, self.view_size.h - self.notch_height);
+                 } else if prev_sizing_mode.is_normal() && !self.border.is_off() {
+                     let width = self.border.width();
+                     tile_size.w += width * 2.;
+@@ -807,7 +816,7 @@ impl<W: LayoutElement> Tile<W> {
+             // Normally we'd just return the fullscreen size here, but this makes things a bit
+             // nicer if a fullscreen window is bigger than the fullscreen size for some reason.
+             size.w = f64::max(size.w, self.view_size.w);
+-            size.h = f64::max(size.h, self.view_size.h);
++            size.h = f64::max(size.h, self.view_size.h - self.notch_height);
+             return size;
+         }
+ 
+@@ -826,7 +835,7 @@ impl<W: LayoutElement> Tile<W> {
+             // Normally we'd just return the fullscreen size here, but this makes things a bit
+             // nicer if a fullscreen window is bigger than the fullscreen size for some reason.
+             size.w = f64::max(size.w, self.view_size.w);
+-            size.h = f64::max(size.h, self.view_size.h);
++            size.h = f64::max(size.h, self.view_size.h - self.notch_height);
+             return size;
+         }
+ 
+@@ -1006,8 +1015,10 @@ impl<W: LayoutElement> Tile<W> {
+     }
+ 
+     pub fn request_fullscreen(&mut self, animate: bool, transaction: Option<Transaction>) {
++        let mut size = self.view_size;
++        size.h = (size.h - self.notch_height).max(0.);
+         self.window.request_size(
+-            self.view_size.to_i32_round(),
++            size.to_i32_round(),
+             SizingMode::Fullscreen,
+             animate,
+             transaction,
+diff --git a/src/layout/workspace.rs b/src/layout/workspace.rs
+index 8851a92f..b084c841 100644
+--- a/src/layout/workspace.rs
++++ b/src/layout/workspace.rs
+@@ -89,6 +89,10 @@ pub struct Workspace<W: LayoutElement> {
+     /// zones.
+     working_area: Rectangle<f64, Logical>,
+ 
++    /// Height, in logical pixels, reserved at the top of the output that fullscreen windows
++    /// must not draw under (e.g. to dodge a camera notch).
++    notch_height: f64,
++
+     /// This workspace's shadow in the overview.
+     shadow: Shadow,
+ 
+@@ -267,6 +271,7 @@ impl<W: LayoutElement> Workspace<W> {
+             transform: output.current_transform(),
+             view_size,
+             working_area,
++            notch_height: 0.,
+             shadow: Shadow::new(shadow_config),
+             background_buffer: SolidColorBuffer::new(view_size, options.layout.background_color),
+             output: Some(output),
+@@ -330,6 +335,7 @@ impl<W: LayoutElement> Workspace<W> {
+             original_outputs,
+             view_size,
+             working_area,
++            notch_height: 0.,
+             shadow: Shadow::new(shadow_config),
+             background_buffer: SolidColorBuffer::new(view_size, options.layout.background_color),
+             clock,
+@@ -623,13 +629,29 @@ impl<W: LayoutElement> Workspace<W> {
+     }
+ 
+     pub fn make_tile(&self, window: W) -> Tile<W> {
+-        Tile::new(
++        let mut tile = Tile::new(
+             window,
+             self.view_size,
+             self.scale.fractional_scale(),
+             self.clock.clone(),
+             self.options.clone(),
+-        )
++        );
++        tile.set_notch_height(self.notch_height);
++        tile
++    }
++
++    pub fn set_notch_height(&mut self, notch_height: f64) -> bool {
++        if self.notch_height == notch_height {
++            return false;
++        }
++
++        self.notch_height = notch_height;
++        self.scrolling.set_notch_height(notch_height);
++        for tile in self.floating.tiles_mut() {
++            tile.set_notch_height(notch_height);
++        }
++
++        true
+     }
+ 
+     #[allow(clippy::too_many_arguments)]
+@@ -644,6 +666,7 @@ impl<W: LayoutElement> Workspace<W> {
+         anim: Option<niri_config::Animation>,
+     ) {
+         self.enter_output_for_window(tile.window());
++        tile.set_notch_height(self.notch_height);
+         tile.restore_to_floating = is_floating;
+ 
+         match target {
+@@ -738,10 +761,11 @@ impl<W: LayoutElement> Workspace<W> {
+         &mut self,
+         col_idx: usize,
+         tile_idx: Option<usize>,
+-        tile: Tile<W>,
++        mut tile: Tile<W>,
+         activate: bool,
+     ) {
+         self.enter_output_for_window(tile.window());
++        tile.set_notch_height(self.notch_height);
+         self.scrolling
+             .add_tile_to_column(col_idx, tile_idx, tile, activate);
+ 
+@@ -752,13 +776,14 @@ impl<W: LayoutElement> Workspace<W> {
+ 
+     pub fn add_column(
+         &mut self,
+-        column: Column<W>,
++        mut column: Column<W>,
+         activate: bool,
+         anim: Option<niri_config::Animation>,
+     ) {
+         for (tile, _) in column.tiles() {
+             self.enter_output_for_window(tile.window());
+         }
++        column.set_notch_height(self.notch_height);
+ 
+         self.scrolling.add_column(None, column, activate, anim);
+ 
+diff --git a/src/niri.rs b/src/niri.rs
+index 6d4b957c..361381bf 100644
+--- a/src/niri.rs
++++ b/src/niri.rs
+@@ -500,6 +500,9 @@ pub struct OutputState {
+     /// Solid color buffer for the backdrop that we use instead of clearing to avoid damage
+     /// tracking issues and make screenshots easier.
+     pub backdrop_buffer: SolidColorBuffer,
++    /// Solid black buffer covering the notch strip, drawn below the overlay layer and above
++    /// everything else while a fullscreen window is active.
++    pub notch_buffer: SolidColorBuffer,
+     pub xray: Xray,
+     pub lock_render_state: LockRenderState,
+     pub lock_surface: Option<LockSurface>,
+@@ -1891,11 +1894,19 @@ impl State {
+             backdrop_color[3] = 1.;
+             let backdrop_color = Color32F::from(backdrop_color);
+ 
++            let notch_height = config
++                .and_then(|c| c.notch_height)
++                .map(|v| v.0 / scale)
++                .unwrap_or(0.);
++            let notch_size = Size::from((output_size(output).w, notch_height));
++
+             if let Some(state) = self.niri.output_state.get_mut(output) {
+                 if state.backdrop_buffer.color() != backdrop_color {
+                     state.backdrop_buffer.set_color(backdrop_color);
+                     recolored_outputs.push(output.clone());
+                 }
++
++                state.notch_buffer.resize(notch_size);
+             }
+ 
+             for mon in self.niri.layout.monitors_mut() {
+@@ -1915,6 +1926,11 @@ impl State {
+                     // Also redraw these; if anything, the background color could've changed.
+                     recolored_outputs.push(output.clone());
+                 }
++
++                if mon.set_notch_height(notch_height) {
++                    recolored_outputs.push(output.clone());
++                }
++
+                 break;
+             }
+         }
+@@ -2982,6 +2998,8 @@ impl Niri {
+             .to_array_unpremul();
+         backdrop_color[3] = 1.;
+ 
++        let notch_height = c.and_then(|c| c.notch_height).map(|v| v.0 / scale).unwrap_or(0.);
++
+         // FIXME: fix winit damage on other transforms.
+         if name.connector == "winit" {
+             transform = Transform::Flipped180;
+@@ -3006,6 +3024,13 @@ impl Niri {
+ 
+         self.layout.add_output(output.clone(), layout_config);
+ 
++        for mon in self.layout.monitors_mut() {
++            if mon.output() == &output {
++                mon.set_notch_height(notch_height);
++                break;
++            }
++        }
++
+         let lock_render_state = if self.is_locked() {
+             // We haven't rendered anything yet so it's as good as locked.
+             LockRenderState::Locked
+@@ -3024,6 +3049,7 @@ impl Niri {
+             vblank_throttle: VBlankThrottle::new(self.event_loop.clone(), name.connector.clone()),
+             frame_callback_sequence: 0,
+             backdrop_buffer: SolidColorBuffer::new(size, backdrop_color),
++            notch_buffer: SolidColorBuffer::new((size.w, notch_height), [0., 0., 0., 1.]),
+             xray: Xray::new(),
+             lock_render_state,
+             lock_surface: None,
+@@ -3150,6 +3176,9 @@ impl Niri {
+         if let Some(state) = self.output_state.get_mut(output) {
+             state.backdrop_buffer.resize(output_size);
+ 
++            let notch_height = state.notch_buffer.size().h;
++            state.notch_buffer.resize((output_size.w, notch_height));
++
+             state.lock_color_buffer.resize(output_size);
+             if let Some(lock_surface) = &state.lock_surface {
+                 configure_lock_surface(lock_surface, output);
+@@ -3209,6 +3238,20 @@ impl Niri {
+         Some((output, pos_within_output))
+     }
+ 
++    /// Whether the pointer is inside the notch strip at the top of this output.
++    ///
++    /// Used to reveal what the notch blackout covers while the pointer is over it.
++    fn pointer_is_in_notch(&self, output: &Output, notch_height: f64) -> bool {
++        let Some(pointer) = self.seat.get_pointer() else {
++            return false;
++        };
++        let Some((pointer_output, pos)) = self.output_under(pointer.current_location()) else {
++            return false;
++        };
++
++        pointer_output == output && 0. <= pos.y && pos.y < notch_height
++    }
++
+     fn is_inside_hot_corner(&self, output: &Output, pos: Point<f64, Logical>) -> bool {
+         let config = self.config.borrow();
+         let hot_corners = output
+@@ -4511,6 +4554,24 @@ impl Niri {
+         push_popups_from_layer!(Layer::Overlay);
+         push_normal_from_layer!(Layer::Overlay);
+ 
++        // Black out the notch strip over everything below the overlay layer while a fullscreen
++        // window is active. Hovering the strip lifts the blackout to reveal what's underneath.
++        let notch_height = state.notch_buffer.size().h;
++        if mon.render_above_top_layer()
++            && notch_height > 0.
++            && !self.pointer_is_in_notch(output, notch_height)
++        {
++            push(
++                SolidColorRenderElement::from_buffer(
++                    &state.notch_buffer,
++                    (0., 0.),
++                    1.,
++                    Kind::Unspecified,
++                )
++                .into(),
++            );
++        }
++
+         // When rendering above the top layer, we put the regular monitor elements first.
+         // Otherwise, we will render all layer-shell pop-ups and the top layer on top.
+         if mon.render_above_top_layer() {
