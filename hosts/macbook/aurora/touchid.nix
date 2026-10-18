@@ -1,16 +1,5 @@
-# Touch ID with aurora's apple_sep driver, the userspace side of
-# tools/aurora-sep/aurora-touchid in the kernel tree and
-# aurora-silicon/aurora-sep-userspace (libfprint's `aurora` driver).
-#
-# Matching runs in the Secure Enclave, Linux only sees /dev/sep-bio. The enclave
-# saves its state after every enrol and verify into the device-wide xART store
-# on the iBoot system container (nvme0n1p1), which macOS uses too. The driver
-# writes there only with xartWrites below, and nothing works without it. Read
-# tools/aurora-sep/XART-SAFETY.md and keep a raw image of that partition first:
-#   sudo dd if=/dev/disk/by-partlabel/iBootSystemContainer of=<off-disk file> bs=1M
-#
 # The sensor calibration is per Mac and stays out of the repo, like
-# /boot/vendorfw. Extract it once (read-only), then rebuild:
+# /boot/vendorfw. Extract it once and rebuild:
 #   sudo aurora-extract-mesa-calibration -o /var/lib/aurora-touchid/mesa_calibration.bin
 {
   lib,
@@ -76,9 +65,8 @@ in
 
   environment.systemPackages = [ extractCalibration ];
 
-  # The driver attaches to the running enclave once per boot (reloading it needs
-  # a reboot), and reads the xART store from the iBoot container, so load it
-  # once that partition is there, as aurora's apple-sep.service does.
+  # The driverreads the xART store from the iBoot container, so load it
+  # once that partition is there
   systemd.services.apple-sep = {
     description = "Apple SEP and Touch ID";
     wantedBy = [ "multi-user.target" ];

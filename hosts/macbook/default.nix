@@ -7,9 +7,6 @@
   ...
 }:
 let
-  # Peripheral firmware (wifi, bluetooth, ...) stays on the ESP, it is
-  # non-redistributable and this repo is public. Reading it needs --impure,
-  # when evaluated from another machine the firmware is left out.
   impure = builtins ? currentSystem;
   onMacbook = impure && builtins.currentSystem == "aarch64-linux";
 in
@@ -40,12 +37,10 @@ in
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
-  # the ESP is 476M, ~120M of it is asahi/vendorfw/m1n1, a generation with its
-  # own kernel takes ~70-100M
+  # ESP roughly 500M , 120M for asahi/vendorfw/m1n1, a generation takes up to 100M
   boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = false;
 
-  # 16G of RAM is not enough for parallel kernel/rust builds
   swapDevices = [
     {
       device = "/var/lib/swapfile";

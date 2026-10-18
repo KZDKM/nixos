@@ -1,14 +1,31 @@
 {
   inputs,
   config,
+  lib,
   pkgs,
   system,
   ...
 }:
 {
-  # Time zone from geoclue's location (beacondb, by IP when there's no
-  # wpa_supplicant wifi scan to use, as with iwd on the macbook)
   services.automatic-timezoned.enable = true;
+  environment.etc."geoclue/conf.d/90-automatic-timezoned.conf".text = ''
+    [ip]
+    enable=true
+    method=ichnaea
+
+    [agent]
+    whitelist=${
+      lib.concatStringsSep ";" [
+        "gnome-shell"
+        "io.elementary.desktop.agent-geoclue2"
+        "geoclue-demo-agent"
+      ]
+    }
+  '';
+  systemd.services.automatic-timezoned.serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "30s";
+  };
 
   # Select internationalisation properties.
   i18n.defaultLocale = "zh_CN.UTF-8";

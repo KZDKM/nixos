@@ -37,8 +37,6 @@ in
             withFFmpeg = true;
           };
         })) {
-      # Zen ships delta_multiplier_y = 200 (Firefox: 100), which also scales
-      # touchpad pan gestures and makes scrolling 2x faster than GTK apps.
       extraPrefs = ''
         defaultPref("mousewheel.default.delta_multiplier_y", 100);
         defaultPref("zen.urlbar.replace-newtab", false);
@@ -48,12 +46,20 @@ in
   # Set default browser
   xdg.mime = {
     enable = true;
-    defaultApplications = {
-      "text/html" = "zen.desktop";
-      "x-scheme-handler/http" = "zen.desktop";
-      "x-scheme-handler/https" = "zen.desktop";
-      "x-scheme-handler/about" = "zen.desktop";
-      "x-scheme-handler/unknown" = "zen.desktop";
-    };
+    defaultApplications = builtins.listToAttrs (
+      map (type: { name = type; value = "zen.desktop"; }) [
+        "text/html"
+        "application/xhtml+xml"
+        "application/x-extension-htm"
+        "application/x-extension-html"
+        "application/x-extension-shtml"
+        "application/x-extension-xht"
+        "application/x-extension-xhtml"
+        "x-scheme-handler/http"
+        "x-scheme-handler/https"
+        "x-scheme-handler/about"
+        "x-scheme-handler/unknown"
+      ]
+    );
   };
 }

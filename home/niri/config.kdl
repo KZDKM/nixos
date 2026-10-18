@@ -295,7 +295,8 @@ binds {
     Mod+Alt+R { spawn "ignis" "run-command" "recorder-record-portal"; }
 
 	//Ctrl+Space { spawn "fcitx5-remote" "-t"; }
-	Mod+Shift+Q { quit; }
+	Mod+Shift+Q { spawn "noctalia" "msg" "panel-open" "session"; }
+    Mod+Shift+Ctrl+Q { quit; }
 }
 
 overview {

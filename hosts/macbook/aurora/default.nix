@@ -1,18 +1,5 @@
-# omacom/linux-aurora kernel. Two ways to build it:
-#
-# - release (default): aurora's own tree and the config from its release recipe
-#   (linux-aurora-recipe-*.tar.gz), only CONFIG_LOCALVERSION changed. This is
-#   what boots on the J414s; the release kernel and dtb also boot it on Fedora.
-# - rebase: aurora.patch.xz (from ./update-patch.sh) on top of
-#   nixos-apple-silicon's asahi kernel with the nixpkgs-generated config. This
-#   took an SError on boot, most likely because that config has the Apple
-#   DART/PCIe/TYPEC/DRM drivers as modules where aurora builds them in.
-#
-# m1n1 is aurora's (omacom/m1n1, as pinned by the release): AsahiLinux m1n1
-# plus the SEP warm-registration guard and preboot-UUID forwarding the SEP
-# driver needs. It took an SError with the rebased kernel, not yet tried with
-# the release one. boot.bin is not per generation: keep a known-good copy on
-# the ESP to put back if it doesn't boot.
+# omacom/linux-aurora kernel
+
 {
   inputs,
   lib,
@@ -42,8 +29,7 @@ let
     configfile = ./config;
     kernelPatches = [
       {
-        # built-in panel reports 0x0 mm, so GDM and the cursor stay at 1x
-        # (omacom/linux-aurora#84, drop once it's merged)
+        # omacom/linux-aurora#84
         name = "appledrm-panel-size";
         patch = ./appledrm-panel-size.patch;
       }
@@ -71,7 +57,6 @@ lib.mkMerge [
             rev = "d05ba17dfb771871d608225be42968bbb1e75a18";
             hash = "sha256-Ed1B/SyqCeq+1YPECS0J80tJickA/mgBJ1S0yGxx4aA=";
           };
-          # cargoDeps follows src, its Cargo.lock is the same as 2.0.0's
         };
       })
     ];
@@ -80,13 +65,11 @@ lib.mkMerge [
     # release keeps phram from binding them at boot
     boot.blacklistedKernelModules = [ "phram" ];
 
-    # the SEP driver and Touch ID are in ./touchid.nix
   }
 
   (lib.mkIf (!rebase) {
     boot.kernelPackages = lib.mkForce (pkgsKernel.linuxPackagesFor kernel);
-    # NixOS' default initrd modules (ahci, ...) are not in aurora's config, the
-    # Apple ones nixos-apple-silicon lists are either modules or built in
+    # NixOS default initrd modules are not in aurora's config
     boot.initrd.allowMissingModules = true;
   })
 
@@ -95,11 +78,7 @@ lib.mkMerge [
       {
         name = "aurora";
         patch = ./aurora.patch.xz;
-        # Kconfig symbols aurora adds, set as in its release config. Most are for
-        # the M3 and the J613/T8140, the ANE, USB4 and dockchannel ones apply to
-        # the M2 Pro too. Deviations: DRM and TYPEC are modules here, so
-        # DRM_ASAHI_NEO is one too, and DRM_APPLE_NEO (MacBook Neo display) is off
-        # as it needs unexported iommu symbols as a module.
+        # Kconfig symbols aurora adds, set as in its release config
         structuredExtraConfig = with lib.kernel; {
           APPLE_CLPC = module;
           APPLE_MCC = yes;

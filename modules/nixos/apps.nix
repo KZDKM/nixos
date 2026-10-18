@@ -64,9 +64,12 @@
     pkgs.obsidian
     pkgs.libreoffice
     #pkgs.apostrophe
+    pkgs.typesetter
     pkgs.inkscape
     pkgs.ungoogled-chromium
     pkgs.kdePackages.kdenlive
+    pkgs.foliate
+    pkgs.evince
 
     pkgs.vesktop
     pkgs.obs-studio
@@ -114,4 +117,15 @@
   #   enable = true;
   #   enableSSHSupport = true;
   # };
+
+  # Evince for PDF (GNOME brings Papers, which would win otherwise)
+  xdg.mime.defaultApplications = builtins.listToAttrs (
+    map (type: { name = type; value = "org.gnome.Evince.desktop"; }) [
+      "application/pdf"
+      "application/x-bzpdf"
+      "application/x-ext-pdf"
+      "application/x-gzpdf"
+      "application/x-xzpdf"
+    ]
+  );
 }

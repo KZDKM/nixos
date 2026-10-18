@@ -22,6 +22,13 @@ inputs: final: prev: {
       ./niri-ctm-gamma.patch
       ./niri-fullscreen-notch.patch
     ];
+    # Swipe gesture speed overrides
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace src/layout/monitor.rs \
+        --replace-fail "WORKSPACE_GESTURE_MOVEMENT: f64 = 300.;" "WORKSPACE_GESTURE_MOVEMENT: f64 = 900.;"
+      substituteInPlace src/layout/scrolling.rs \
+        --replace-fail "VIEW_GESTURE_WORKING_AREA_MOVEMENT: f64 = 1200.;" "VIEW_GESTURE_WORKING_AREA_MOVEMENT: f64 = 2400.;"
+    '';
     # `niri --version` still says 26.04
     doInstallCheck = false;
   });

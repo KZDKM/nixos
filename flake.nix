@@ -15,18 +15,6 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    # unused, niri comes from nixpkgs
-    #niri-package = {
-    #  url = "github:urayde/niri";
-    #  inputs.nixpkgs.follows = "nixpkgs";
-    #};
-    #niri = {
-    #  url = "github:sodiboo/niri-flake";
-    #  inputs.niri-unstable.follows = "niri-package";
-    #  # inputs.niri-stable.follows = "niri-package"; if you use stable
-    #  inputs.nixpkgs.follows = "nixpkgs";
-    #};
-
     zen-browser.url = "github:youwen5/zen-browser-flake";
     zen-browser.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -40,11 +28,6 @@
     #Hyprspace.url = "github:KZDKM/Hyprspace";
     #Hedge.url = "github:KZDKM/Hedge";
 
-    # unused, booting with grub
-    #lanzaboote = {
-    #  url = "github:nix-community/lanzaboote/v0.4.2";
-    #  inputs.nixpkgs.follows = "nixpkgs";
-    #};
     noctalia = {
       url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";
