@@ -7,6 +7,10 @@
 }:
 let
   target = "${config.xdg.stateHome}/noctalia/settings.toml";
+  # Same derivation as the system package; Kvantum only picks up themes from
+  # user-writable locations plus its own DATADIR, so expose it under
+  # ~/.config/Kvantum too (Qt5's plugin does not scan XDG data dirs at all).
+  kvlibadwaita = pkgs.callPackage ../../pkgs/kvlibadwaita.nix { };
 in
 {
   imports = [
@@ -47,6 +51,14 @@ in
       '';
       ".config/gtk-3.0/gtk.css".source = ./gtk-3.0/gtk.css;
       ".config/gtk-4.0/gtk.css".source = ./gtk-4.0/gtk.css;
+      # Kvantum theme: Qt6 finds the system copy in $XDG_DATA_DIRS, but Qt5
+      # uses the built-in fallback because nixpkgs only patches the Qt6 style
+      # for XDG support. A user config also survives sandboxes that hide /etc.
+      ".config/Kvantum/kvantum.kvconfig".text = ''
+        theme=KvLibadwaitaDark
+      '';
+      ".config/Kvantum/KvLibadwaita".source = "${kvlibadwaita}/share/Kvantum/KvLibadwaita";
+      ".config/Kvantum/Colors".source = "${kvlibadwaita}/share/Kvantum/Colors";
     };
   };
   programs.noctalia = {
