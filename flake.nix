@@ -17,6 +17,10 @@
 
     zen-browser.url = "github:youwen5/zen-browser-flake";
     zen-browser.inputs.nixpkgs.follows = "nixpkgs";
+    helium = {
+      url = "github:schembriaiden/helium-browser-nix-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # used by old/spicetify.nix
     #spicetify-nix.url = "github:Gerg-L/spicetify-nix";
@@ -47,6 +51,12 @@
     nixpkgs-xr.url = "github:nix-community/nixpkgs-xr";
 
     claude-desktop-nix-flake.url = "github:poeck/claude-desktop-nix-flake";
+    deepseek-harness.url = "github:moraxyc/deepseek-harness.nix";
+
+    nix-x86-on-aarch64 = {
+      url = "github:rowanG077/nix-x86-on-aarch64";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

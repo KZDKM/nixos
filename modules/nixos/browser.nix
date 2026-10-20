@@ -42,12 +42,13 @@ in
         defaultPref("zen.urlbar.replace-newtab", false);
       '';
     })
+    inputs.helium.packages.${system}.default
   ];
   # Set default browser
   xdg.mime = {
     enable = true;
     defaultApplications = builtins.listToAttrs (
-      map (type: { name = type; value = "zen.desktop"; }) [
+      map (type: { name = type; value = "helium.desktop"; }) [
         "text/html"
         "application/xhtml+xml"
         "application/x-extension-htm"
