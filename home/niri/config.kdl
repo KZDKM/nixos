@@ -11,7 +11,7 @@ spawn-at-startup "kdeconnectd"
 
 input {
 	focus-follows-mouse max-scroll-amount="40%"
-	warp-mouse-to-focus
+	//warp-mouse-to-focus
 	mouse {
 		accel-profile "flat"
 	}
@@ -118,6 +118,15 @@ window-rule {
 	open-focused false
 }
 
+// IDA Pro: its dialogs, progress windows and pickers are separate toplevels
+// that would otherwise tile and shift the columns. Only the main window
+// ("IDA - <file>", or "IDA" before a file is loaded) tiles.
+window-rule {
+    match app-id=r#"^com\.hex_rays\.IDA"#
+    exclude app-id=r#"^com\.hex_rays\.IDA"# title=r#"^IDA( - .*)?$"#
+    open-floating true
+}
+
 // Example: enable rounded corners for all windows.
 window-rule {
     geometry-corner-radius 16
@@ -168,7 +177,7 @@ binds {
     //Mod+Space { spawn "vicinae" "toggle"; }
     Mod+L { spawn "hyprlock"; }
     Mod+E { spawn "nautilus" "-w"; }
-    Mod+B { spawn "zen"; }
+    Mod+B { spawn "helium"; }
     Mod+Escape { spawn "ignis" "toggle-window" "PowerMenu"; }
     Mod+I { spawn "ignis" "toggle-window" "Settings"; }
 

@@ -7,7 +7,7 @@ input {
 		dwt
 		accel-speed 0.5
 		accel-profile "flat"
-		scroll-factor 0.333
+		scroll-factor 0.3
 	}
 	keyboard {
         xkb {
@@ -18,9 +18,9 @@ input {
 
 // fix electron scroll
 window-rule {
-    match app-id=r#"^(codium|obsidian|vesktop|chromium-browser|com\.anthropic\.Claude)$"#
+    match app-id=r#"^(codium|md.obsidian.Obsidian|vesktop|chromium-browser|com\.anthropic\.Claude|deepseek-ai-dsh-desktop|helium)$"#
     match app-id=r#"(?i)lm.?studio"#
-    scroll-factor 0.25
+    scroll-factor 0.3
 }
 
 
