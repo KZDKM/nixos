@@ -106,4 +106,13 @@ in
       ${pkgs.coreutils}/bin/timeout 5 ${pkgs.systemd}/bin/systemctl stop fprintd.service || true
     fi
   '';
+
+  # No fingerprint at the GDM login: it doesn't unlock the GNOME keyring, which
+  # needs the password. GDM runs gdm-fingerprint next to gdm-password only while
+  # this greeter setting is on; sudo, polkit and the lock screen keep it.
+  programs.dconf.profiles.gdm.databases = [
+    {
+      settings."org/gnome/login-screen".enable-fingerprint-authentication = false;
+    }
+  ];
 }

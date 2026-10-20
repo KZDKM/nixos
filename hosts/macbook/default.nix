@@ -19,6 +19,9 @@ in
     ./boot.nix
     ./hardware-configuration.nix
 
+    ./apps.nix
+    ./compat.nix
+
     ../../modules/nixos
   ];
 
@@ -41,6 +44,8 @@ in
   boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = false;
 
+  #boot.kernelParams = [ "apple_pmgr_misc.idle_fabric_pstate=1" ];
+
   swapDevices = [
     {
       device = "/var/lib/swapfile";
@@ -53,6 +58,8 @@ in
     algorithm = "zstd";
     memoryPercent = 50;  # 8G
   };
+
+  hardware.asahi.avd.vaapi-support = true;
 
   networking.hostName = "KZDKMs-MBP-NixOS";
   # wpa_supplicant lacks WPA3 on the broadcom chips

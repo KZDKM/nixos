@@ -7,8 +7,6 @@
   ...
 }:
 let
-  rebase = false;
-
   # the kernel only follows the pinned nixpkgs-asahi-kernel input, see flake.nix
   pkgsKernel = import inputs.nixpkgs-asahi-kernel { inherit (pkgs.stdenv.hostPlatform) system; };
 
@@ -58,6 +56,17 @@ lib.mkMerge [
             hash = "sha256-Ed1B/SyqCeq+1YPECS0J80tJickA/mgBJ1S0yGxx4aA=";
           };
         };
+
+        # this is needed for an ongoing issue of chromium showing green
+        libva-v4l2_request-sofus13 = prev.libva-v4l2_request-sofus13.overrideAttrs {
+          version = "1.3-aurora-unstable-2026-10-11";
+          src = final.fetchFromGitHub {
+            owner = "omacom";
+            repo = "libva-v4l2_request";
+            rev = "4f60c51f7841dd74bb61c94a4ad31e630bbdab01";
+            hash = "sha256-+M2XnhPP/vdNZqBZcQ1nk/EXZFHdDGPAbvF67AK1J5A=";
+          };
+        };
       })
     ];
 
@@ -65,49 +74,8 @@ lib.mkMerge [
     # release keeps phram from binding them at boot
     boot.blacklistedKernelModules = [ "phram" ];
 
-  }
-
-  (lib.mkIf (!rebase) {
     boot.kernelPackages = lib.mkForce (pkgsKernel.linuxPackagesFor kernel);
     # NixOS default initrd modules are not in aurora's config
     boot.initrd.allowMissingModules = true;
-  })
-
-  (lib.mkIf rebase {
-    boot.kernelPatches = [
-      {
-        name = "aurora";
-        patch = ./aurora.patch.xz;
-        # Kconfig symbols aurora adds, set as in its release config
-        structuredExtraConfig = with lib.kernel; {
-          APPLE_CLPC = module;
-          APPLE_MCC = yes;
-          APPLE_PMC = yes;
-          APPLE_PMP_REPORT_NEO = yes;
-          APPLE_SEP_FV_INTERFACE = yes;
-          APPLE_T6030_DISPLAY_GATE = yes;
-          BT_MTK7932_PCIE = module;
-          DRM_ACCEL_ANE = module;
-          DRM_APPLE_FABRIC_CORE = module;
-          DRM_APPLE_NEO = no;
-          DRM_ASAHI_NEO = module;
-          HID_APPLE_MTP_HAPTIC = module;
-          MT7932_FULLMAC = module;
-          PCIE_APPLE_PIODMA_DIAG = yes;
-          RESET_APPLE_CIO = yes;
-          SENSORS_APPLE_PMP_J613 = module;
-          SERIAL_APPLE_DOCKCHANNEL = yes;
-          SERIAL_APPLE_DOCKCHANNEL_EARLYCON = yes;
-          SND_SOC_APPLE_T8140_AOP_AUDIO = module;
-          SPI_APPLE_QSPI = module;
-          USB4_APPLE_SOC = module;
-        };
-      }
-      {
-        # aurora builds pcie-apple in, it is a module here
-        name = "pcie-apple-module";
-        patch = ./pcie-apple-module.patch;
-      }
-    ];
-  })
+  }
 ]
